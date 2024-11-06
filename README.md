@@ -19,7 +19,7 @@
   </details>
   <details>
     <summary>2- Modelo lógico</summary>
-    <!-- <img src="mapa_conceitual1.png" width="100%"> -->
+    <img src="logico v1.png" width="100%"> 
   </details>
   <details>
     <summary>3- Modelo físico</summary>
