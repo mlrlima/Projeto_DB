@@ -34,7 +34,7 @@ static boolean resetarDatabase(Connection connection)
 
         stmt.execute
         (
-        "CREATE TABLE Instituição" +
+        "CREATE TABLE instituicao" +
         "(id INT PRIMARY KEY NOT NULL AUTO_INCREMENT," +
         "nome varchar(100) NOT NULL," +
         "causa_social TEXT," +
@@ -42,9 +42,32 @@ static boolean resetarDatabase(Connection connection)
         "data_aquisicao DATE NOT NULL," +
         "plano_id INT NOT NULL," +
         
-        "CONSTRAINT fk_plano_id" +
-        " FOREIGN KEY (plano_id) REFERENCES Plano(id) ON DELETE RESTRICT ON UPDATE RESTRICT);"
+        "CONSTRAINT fk_plano_id " +
+        "FOREIGN KEY (plano_id) REFERENCES Plano(id) ON DELETE RESTRICT ON UPDATE RESTRICT);" 
         );
+
+        stmt.execute("CREATE TABLE Usuario (" +
+                    "id INT PRIMARY KEY NOT NULL AUTO_INCREMENT," +
+                    "nome VARCHAR(100) NOT NULL," +
+                    "email VARCHAR(100) NOT NULL," + 
+                    "senha VARCHAR(100) NOT NULL," +
+                    "id_plano INT,"  +
+                    "id_instituicao INT NOT NULL," +
+
+                    "CONSTRAINT fk_id_instituicao "+ 
+                    "FOREIGN KEY (id_instituicao) REFERENCES instituicao(id)" +
+                    ");");
+
+        stmt.execute("CREATE TABLE Arquivo (" +
+                    "id INT PRIMARY KEY NOT NULL AUTO_INCREMENT," +
+                    "nome VARCHAR(100) NOT NULL," +
+                    "tipo VARCHAR(100) NOT NULL," +
+                    "data_criacao DATE," +
+                    "id_usuario INT," +
+
+                    "CONSTRAINT fk_id_usuario " +
+                    "FOREIGN KEY (id_usuario) REFERENCES Usuario(id)" +
+                    ");"); 
     }
 
     catch ( SQLException e ) { e.printStackTrace(); resultado = false; }
