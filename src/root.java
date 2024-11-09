@@ -46,7 +46,8 @@ static boolean resetarDatabase(Connection connection)
         "FOREIGN KEY (plano_id) REFERENCES Plano(id) ON DELETE RESTRICT ON UPDATE RESTRICT);" 
         );
 
-        stmt.execute("CREATE TABLE Usuario (" +
+        stmt.execute(
+            "CREATE TABLE Usuario (" +
                     "id INT PRIMARY KEY NOT NULL AUTO_INCREMENT," +
                     "nome VARCHAR(100) NOT NULL," +
                     "email VARCHAR(100) NOT NULL," + 
@@ -55,19 +56,41 @@ static boolean resetarDatabase(Connection connection)
                     "id_instituicao INT NOT NULL," +
 
                     "CONSTRAINT fk_id_instituicao "+ 
-                    "FOREIGN KEY (id_instituicao) REFERENCES instituicao(id)" +
-                    ");");
+                    "FOREIGN KEY (id_instituicao) REFERENCES instituicao(id)" + ");"
+        );
 
-        stmt.execute("CREATE TABLE Arquivo (" +
+        stmt.execute
+        (  
+        "CREATE TABLE Arquivo (" +
                     "id INT PRIMARY KEY NOT NULL AUTO_INCREMENT," +
-                    "nome VARCHAR(100) NOT NULL," +
                     "tipo VARCHAR(100) NOT NULL," +
-                    "data_criacao DATE," +
-                    "id_usuario INT," +
+                    "permissoes INT," +
+                    "data_alteracao DATE," +
+                    "tamanho VARCHAR(100) NOT NULL," +
+                    "url VARCHAR(100) NOT NULL," +
+                    "localizacao VARCHAR(100) NOT NULL," +
+                    "id_dono INT," +
 
-                    "CONSTRAINT fk_id_usuario " +
-                    "FOREIGN KEY (id_usuario) REFERENCES Usuario(id)" +
-                    ");"); 
+                    "CONSTRAINT fk_id_dono " +
+                    "FOREIGN KEY (id_dono) REFERENCES Usuario(id)" +");"    
+        ); 
+
+        stmt.execute
+        (  
+        "CREATE TABLE Resposta (" +
+                    "id_resposta INT PRIMARY KEY NOT NULL AUTO_INCREMENT," +
+                    "descricao VARCHAR(100) NOT NULL," +
+                    "id_suporte INT," +
+                    "id_admin INT," +
+
+                    "CONSTRAINT fk_id_suporte" +
+                    "FOREIGN KEY (id_suporte) REFERENCES Usuario(id)" +
+
+                    "CONSTRAINT fk_id_admin " +
+                    "FOREIGN KEY (id_admin) REFERENCES Usuario(id)" +");"
+        ); 
+
+
     }
 
     catch ( SQLException e ) { e.printStackTrace(); resultado = false; }
