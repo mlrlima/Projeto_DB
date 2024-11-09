@@ -23,7 +23,28 @@ static boolean resetarDatabase(Connection connection)
         stmt.execute("CREATE DATABASE webdriver;");
         stmt.execute("use webdriver;");
         
-    
+        stmt.execute
+        (
+        "CREATE TABLE Plano " +
+        "(id INT PRIMARY KEY NOT NULL AUTO_INCREMENT," +
+        "nome TEXT NOT NULL," +
+        "duracao TIME," + 
+        "limite_users INT);"
+        );
+
+        stmt.execute
+        (
+        "CREATE TABLE Instituição" +
+        "(id INT PRIMARY KEY NOT NULL AUTO_INCREMENT," +
+        "nome varchar(100) NOT NULL," +
+        "causa_social TEXT," +
+        "endereco TEXT NOT NULL," +
+        "data_aquisicao DATE NOT NULL," +
+        "plano_id INT NOT NULL," +
+        
+        "CONSTRAINT fk_plano_id" +
+        " FOREIGN KEY (plano_id) REFERENCES Plano(id) ON DELETE RESTRICT ON UPDATE RESTRICT);"
+        );
     }
 
     catch ( SQLException e ) { e.printStackTrace(); resultado = false; }
