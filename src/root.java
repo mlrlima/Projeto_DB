@@ -219,6 +219,45 @@ static void removerUsuario(Connection connection, Scanner scan)
 
 }
 
+static void RootAlterUser(Connection connection, Scanner scan){
+    scan.nextLine();
+    System.out.println("Digite o ID do usuario que você quer altera:\n\n>>> ");
+    String id = scan.nextLine();
+    int action;
+    try{
+       Statement stmt = connection.createStatement();
+       ResultSet result = stmt.executeQuery("SELECT nome FROM Usuario WHERE (id = " + id + ");");
+       
+       if (result.next()) {
+	       System.out.print("\nDigite o novo nome do usuario\n\n>>> ");
+    	   String name = scan.nextLine();
+    	   System.out.print("\nDigite o novo email do usuario\n\n>>> ");
+    	   String email = scan.nextLine();
+    	   System.out.print("\nDigite a nova senha do usuario\n\n>>> ");
+    	   String senha = scan.nextLine();
+    	   System.out.print("\nDigite a nova instituição do usuario\n\n>>> ");
+    	   String instituicao = scan.nextLine();
+    	   
+	       if (name != "") {
+	    	   stmt.execute("UPDATE Usuario SET nome = '" + name + "' WHERE (id = " + id + ");");
+	       }
+	       if (email != "") {
+	    	   stmt.execute("UPDATE Usuario SET email = '" + email + "' WHERE (id = " + id + ");");
+	       }
+	       if (senha != "") {
+	    	   stmt.execute("UPDATE Usuario SET senha = '" + senha + "' WHERE (id = " + id + ");");
+	       }
+	       if (instituicao != "") {
+	    	   stmt.execute("UPDATE Usuario SET id_instituicao = '" + instituicao + "' (WHERE id = " + id + ");");
+	       }
+       }
+       System.out.print("\nUsuario nao encontrado!\n");
+    }
+    catch(SQLException e){
+        e.printStackTrace();
+    }
+}
+
 public static void main(String[] args) 
 {
         
