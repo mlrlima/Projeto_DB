@@ -9,10 +9,10 @@ public class root
 
 static void opcoes()
 {
-    System.out.print("\n\n---------------------------\nOpcoes :\n1- ver todos os usuarios\n2- inserir usuario\n4- remover usuario\n50- resetar database\n\n>>>");
+    System.out.print("\n\n---------------------------\nOpcoes :\n1- ver todos os usuarios\n2- inserir usuario\n4- remover usuario\n5- alterar dados de um usuario\n50- resetar database\n\n>>>");
 }
 
-static boolean resetarDatabase(Connection connection, Scanner scan)
+static boolean resetarDatabase(Connection connection)
 {
     Statement stmt;
     boolean resultado = true;
@@ -61,7 +61,6 @@ static boolean resetarDatabase(Connection connection, Scanner scan)
         "id_instituicao INT," +
         "id_admin INT," +
 
-        "CONSTRAINT fk_id_instituicao "+ 
         "FOREIGN KEY (id_instituicao) REFERENCES instituicao(id)," +
         "FOREIGN KEY (id_admin) REFERENCES Administrador(id)" +
         ");");
@@ -109,28 +108,6 @@ static boolean resetarDatabase(Connection connection, Scanner scan)
         "FOREIGN KEY (id_resposta) REFERENCES Resposta(id_resposta)" +
         ");");
 
-	stmt.execute("create table Comentario("+
-                "id INT PRIMARY KEY NOT NULL AUTO_INCREMENT," +
-                "conteudo TEXT," +
-                "hora TIME," +
-                "data DATE," +
-                "id_usuario INT,"
-                +"id_arquivo INT,"
-                + "FOREIGN KEY (id_arquivo) REFERENCES Arquivo(id),"
-                + "FOREIGN KEY (id_usuario) REFERENCES Usuario(id) );"
-            );
-
-        stmt.execute("create table Compartilhamento("+
-        	"id INT PRIMARY KEY NOT NULL AUTO_INCREMENT," +
-                "id_usuario INT, "+
-                "id_arquivo INT, "+
-                "id_usuario_compartilhado INT,"+
-                "data DATE,"
-                + "FOREIGN KEY (id_usuario) REFERENCES Usuario(id),"
-                + "FOREIGN KEY (id_arquivo) REFERENCES Arquivo(id),"
-                + "FOREIGN KEY(id_usuario_compartilhado) REFERENCES Usuario(id));"
-            );
-
     stmt.execute("DROP ROLE IF EXISTS usuario;"); // usuarios e roles ficam fora da db
     stmt.execute("flush privileges;");
     stmt.execute("CREATE ROLE usuario;");
@@ -142,12 +119,12 @@ static boolean resetarDatabase(Connection connection, Scanner scan)
     return resultado;
 }
 
+
 static void criarUsuario(Connection connection, Scanner scan) // conteudo aqui e um placeholder temporario
 {
     try 
     {
     Statement stmt = connection.createStatement();
-    stmt.execute("use webdriver;");
 
     scan.nextLine();
     System.out.print("\nDigite o nome do novo usuario :\n>>>");
@@ -189,7 +166,6 @@ static void verTabelaUsuarios(Connection connection)
     try 
     {
         Statement stmt = connection.createStatement();
-        stmt.execute("use webdriver;");
         Integer admincheck;
 
         ResultSet result = stmt.executeQuery("SELECT * FROM Usuario;");
@@ -224,7 +200,6 @@ static void removerUsuario(Connection connection, Scanner scan)
     try
     {
         Statement stmt = connection.createStatement();
-        stmt.execute("use webdriver;");
 
         ResultSet result = stmt.executeQuery("SELECT nome FROM Usuario WHERE (id = " + id + ");");
         while (result.next())
@@ -243,7 +218,7 @@ static void removerUsuario(Connection connection, Scanner scan)
 
 static void RootAlterUser(Connection connection, Scanner scan){
     scan.nextLine();
-    System.out.println("Digite o ID do usuario que você quer altera:\n\n>>> ");
+    System.out.println("Digite o ID do usuario que você quer alterar :\n\n>>> ");
     String id = scan.nextLine();
     int action;
     try{
@@ -251,35 +226,40 @@ static void RootAlterUser(Connection connection, Scanner scan){
        ResultSet result = stmt.executeQuery("SELECT nome FROM Usuario WHERE (id = " + id + ");");
        
        if (result.next()) {
-	       System.out.print("\nDigite o novo nome do usuario\n\n>>> ");
+	       System.out.print("\nDigite o novo nome do usuario\n>>> ");
     	   String name = scan.nextLine();
-    	   System.out.print("\nDigite o novo email do usuario\n\n>>> ");
+    	   System.out.print("\nDigite o novo email do usuario\n>>> ");
     	   String email = scan.nextLine();
-    	   System.out.print("\nDigite a nova senha do usuario\n\n>>> ");
+    	   System.out.print("\nDigite a nova senha do usuario\n>>> ");
     	   String senha = scan.nextLine();
-    	   System.out.print("\nDigite a nova instituição do usuario\n\n>>> ");
-    	   String instituicao = scan.nextLine();
+    	   //System.out.print("\nDigite a nova instituição do usuario\n>>> ");
+    	   //String instituicao = scan.nextLine();
     	   
 	       if (name != "") {
 	    	   stmt.execute("UPDATE Usuario SET nome = '" + name + "' WHERE (id = " + id + ");");
 	       }
+           System.out.print("teste 1\n");
 	       if (email != "") {
 	    	   stmt.execute("UPDATE Usuario SET email = '" + email + "' WHERE (id = " + id + ");");
 	       }
+           System.out.print("teste 2\n");
 	       if (senha != "") {
 	    	   stmt.execute("UPDATE Usuario SET senha = '" + senha + "' WHERE (id = " + id + ");");
 	       }
-	       if (instituicao != "") {
-	    	   stmt.execute("UPDATE Usuario SET id_instituicao = '" + instituicao + "' (WHERE id = " + id + ");");
-	       }
+           //System.out.print("teste 3\n");
+	       //if (instituicao != "") {
+	    	//   stmt.execute("UPDATE Usuario SET id_instituicao = " + instituicao + " WHERE (id = " + id + ");");
+	       //}
+           System.out.print("\nteste 4\n");
        }
-       System.out.print("\nUsuario nao encontrado!\n");
     }
+
     catch(SQLException e){
         e.printStackTrace();
     }
 }
-	static void alterarDadosPlano(Connection connection, Scanner scan) {
+
+static void alterarDadosPlano(Connection connection, Scanner scan) {
         try {
             scan.nextLine();
             System.out.print("Digite o ID do plano que deseja alterar:\n>>> ");
@@ -305,7 +285,7 @@ static void RootAlterUser(Connection connection, Scanner scan){
         } catch (SQLException e) {
             e.printStackTrace();
         }
-    }
+}
 
 
 static void alterarDadosInstituicao(Connection connection, Scanner scan) {
@@ -347,11 +327,14 @@ public static void main(String[] args)
     try 
     { 
         connection = DriverManager.getConnection(url, user, pwd); System.out.print ("conectado :)\n\n"); 
-        Statement stmt = connection.createStatement();
-        //stmt.execute("use webdriver;"); // vai dar erro se a database nao existir
     }
-    catch (SQLException e ) { e.printStackTrace(); }
+    catch (SQLException e ) { e.printStackTrace(); return; }
 
+    try 
+    {
+        Statement stmt = connection.createStatement();
+        stmt.execute("use webdriver;");    
+    }   catch (SQLException e) { resetarDatabase(connection); }
 
 
 Scanner scan = new Scanner(System.in);
@@ -376,10 +359,14 @@ Integer num;
         case 4:
             removerUsuario(connection, scan);
             break;
+
+        case 5:
+            RootAlterUser(connection, scan);
+            break;
         
 
         case 50: 
-            if (resetarDatabase(connection, scan)) { System.out.print("\n\n DB resetada com sucesso :)))\n\n");}
+            if (resetarDatabase(connection)) { System.out.print("\n\n DB resetada com sucesso :)))\n\n");}
             else { System.out.print("\n\n deu ruim :(((\n\n"); }
             break;
 
