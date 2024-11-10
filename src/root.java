@@ -9,10 +9,10 @@ public class root
 
 static void opcoes()
 {
-    System.out.print("\n\n---------------------------\n\nOpcoes :\n1- resetar database\n\n>>>");
+    System.out.print("\n\n---------------------------\nOpcoes :\n1- ver todos os usuarios\n2- inserir usuario\n4- remover usuario\n50- resetar database\n\n>>>");
 }
 
-static boolean resetarDatabase(Connection connection)
+static boolean resetarDatabase(Connection connection, Scanner scan)
 {
     Statement stmt;
     boolean resultado = true;
@@ -46,49 +46,69 @@ static boolean resetarDatabase(Connection connection)
         "FOREIGN KEY (plano_id) REFERENCES Plano(id) ON DELETE RESTRICT ON UPDATE RESTRICT);" 
         );
 
-        stmt.execute(
-            "CREATE TABLE Usuario (" +
-                    "id INT PRIMARY KEY NOT NULL AUTO_INCREMENT," +
-                    "nome VARCHAR(100) NOT NULL," +
-                    "email VARCHAR(100) NOT NULL," + 
-                    "senha VARCHAR(100) NOT NULL," +
-                    "id_plano INT,"  +
-                    "id_instituicao INT NOT NULL," +
-
-                    "CONSTRAINT fk_id_instituicao "+ 
-                    "FOREIGN KEY (id_instituicao) REFERENCES instituicao(id)" + ");"
+        stmt.execute
+        (
+        "CREATE TABLE Administrador" +
+        "(id INT PRIMARY KEY NOT NULL AUTO_INCREMENT);" 
         );
+
+        stmt.execute(
+        "CREATE TABLE Usuario (" +
+        "id INT PRIMARY KEY NOT NULL AUTO_INCREMENT," +
+        "nome VARCHAR(100) NOT NULL," +
+        "email VARCHAR(100) NOT NULL," + 
+        "senha VARCHAR(100) NOT NULL," +
+        "id_instituicao INT," +
+        "id_admin INT," +
+
+        "CONSTRAINT fk_id_instituicao "+ 
+        "FOREIGN KEY (id_instituicao) REFERENCES instituicao(id)," +
+        "FOREIGN KEY (id_admin) REFERENCES Administrador(id)" +
+        ");");
+
 
         stmt.execute
         (  
         "CREATE TABLE Arquivo (" +
-                    "id INT PRIMARY KEY NOT NULL AUTO_INCREMENT," +
-                    "tipo VARCHAR(100) NOT NULL," +
-                    "permissoes INT," +
-                    "data_alteracao DATE," +
-                    "tamanho VARCHAR(100) NOT NULL," +
-                    "url VARCHAR(100) NOT NULL," +
-                    "localizacao VARCHAR(100) NOT NULL," +
-                    "id_dono INT," +
-
-                    "CONSTRAINT fk_id_dono " +
-                    "FOREIGN KEY (id_dono) REFERENCES Usuario(id)" +");"    
+        "id INT PRIMARY KEY NOT NULL AUTO_INCREMENT," +
+        "tipo VARCHAR(100) NOT NULL," +
+        "permissoes INT," +
+        "data_alteracao DATE," +
+        "tamanho VARCHAR(100) NOT NULL," +
+        "url VARCHAR(100) NOT NULL," +
+        "localizacao VARCHAR(100) NOT NULL," +
+        "id_dono INT," +
+            
+        "CONSTRAINT fk_id_dono " +
+        "FOREIGN KEY (id_dono) REFERENCES Usuario(id)" +");"    
         ); 
 
         stmt.execute
         (  
         "CREATE TABLE Resposta (" +
-                    "id_resposta INT PRIMARY KEY NOT NULL AUTO_INCREMENT," +
-                    "descricao VARCHAR(100) NOT NULL," +
-                    "id_suporte INT," +
-                    "id_admin INT," +
-
-                    "CONSTRAINT fk_id_suporte" +
-                    "FOREIGN KEY (id_suporte) REFERENCES Usuario(id)" +
-
-                    "CONSTRAINT fk_id_admin " +
-                    "FOREIGN KEY (id_admin) REFERENCES Usuario(id)" +");"
+        "id_resposta INT PRIMARY KEY NOT NULL AUTO_INCREMENT," +
+        "descricao VARCHAR(100) NOT NULL," +
+        "id_admin INT," +
+        
+        "CONSTRAINT fk_id_admin " +
+        "FOREIGN KEY (id_admin) REFERENCES Administrador(id)" + ");"
         ); 
+
+        stmt.execute
+        (
+        "CREATE TABLE Suporte (" +
+        "id INT PRIMARY KEY NOT NULL AUTO_INCREMENT," +
+        "descricao TEXT," +
+        "data DATE," +
+        "hora TIME," +
+        "status INT," +
+        "id_usuario INT," +
+        "id_resposta INT," +
+
+        "FOREIGN KEY (id_usuario) REFERENCES Usuario(id)," +
+        "FOREIGN KEY (id_resposta) REFERENCES Resposta(id_resposta)" +
+        ");");
+
 
 
     }
@@ -98,6 +118,94 @@ static boolean resetarDatabase(Connection connection)
     return resultado;
 }
 
+static void criarUsuario(Connection connection, Scanner scan) // conteudo aqui e um placeholder temporario
+{
+    try 
+    {
+    scan.nextLine();
+    System.out.print("\nDigite o nome do novo usuario :\n>>>");
+    String nome = scan.nextLine();
+    System.out.print("\nDigite a senha do novo usuario :\n>>>");
+    String senha = scan.nextLine();
+    System.out.print("\nDigite o email do novo usuario :\n>>>");
+    String email = scan.nextLine();
+    System.out.print("\nDigite a instituicao do novo usuario, ou 0 para nenhuma :\n>>>");
+    String instituicao = scan.nextLine();
+
+    PreparedStatement prep = connection.prepareStatement("INSERT INTO Usuario (nome, email, senha, id_instituicao, id_admin) VALUES (?, ?, ?, ?, ?)", Statement.RETURN_GENERATED_KEYS);
+
+    prep.setString(1, nome);
+    prep.setString(2, email);
+    prep.setString(3, senha);
+    if (instituicao.equals("0")) { System.out.print("testeteste"); prep.setNull(4, Types.INTEGER); } else { prep.setString(4, instituicao); }
+    prep.setNull(5, Types.INTEGER);
+    prep.addBatch();
+    prep.executeBatch();
+
+    System.out.print ("tabela pessoa adicionada :)\n"); // a partir daqui ta certo
+    
+    Statement stmt = connection.createStatement();
+    stmt.execute("CREATE USER '"+nome+"'@'localhost' IDENTIFIED BY '"+ senha +"';");
+    System.out.print ("usuario adicionado :)\n\n");
+
+    //String teste = ("CREATE USER '"+nome+"'@'localhost' IDENTIFIED BY '"+ senha +"';");
+    }
+    catch (SQLException e) { e.printStackTrace(); }
+}
+
+static void verTabelaUsuarios(Connection connection)
+{
+    try 
+    {
+        Statement stmt = connection.createStatement();
+        stmt.execute("use webdriver;");
+        Integer admincheck;
+
+        ResultSet result = stmt.executeQuery("SELECT * FROM Usuario;");
+        while (result.next())
+        {
+            System.out.print("\n----------------------------\n");
+            System.out.print("ID : " + result.getInt("id") + "\n\n");
+            System.out.print("Nome : " + result.getString("nome") + "\n");
+            System.out.print("Email : " + result.getString("email") + "\n");
+            System.out.print("Senha : " + result.getString("senha") + "\n");
+            System.out.print("Instituicao : " + result.getInt("id_instituicao") + "\n"); // retorna 0 caso seja nulo?
+            System.out.print("Admin : ");
+            
+            admincheck = result.getInt("id_admin");
+            if (admincheck == null)
+            {  System.out.print("Nao\n");  }
+            else
+            {  System.out.print("Sim\n");  }
+
+        }
+    }
+    catch (SQLException e) { e.printStackTrace(); }
+}
+
+static void removerUsuario(Connection connection, Scanner scan)
+{
+    scan.nextLine();
+    System.out.print("\nDigite o ID do usuario que voce quer remover :\n\n>>>");
+    String id = scan.nextLine();
+
+    try
+    {
+        Statement stmt = connection.createStatement();
+        ResultSet result = stmt.executeQuery("SELECT nome FROM Usuario WHERE (id = " + id + ");");
+        while (result.next())
+        {
+            stmt.execute("DELETE FROM Usuario WHERE (id = " + id + ");");
+            stmt.execute("DROP USER '" + result.getString("nome") + "'@localhost;");
+            stmt.execute("flush privileges;");
+            
+            System.out.print("\nUsuario removido com sucesso.\n"); return;
+        }
+        System.out.print("\nUsuario nao encontrado!\n"); 
+    }
+    catch ( SQLException e ) { e.printStackTrace(); }
+
+}
 
 public static void main(String[] args) 
 {
@@ -107,8 +215,15 @@ public static void main(String[] args)
     String pwd = "password";
     Connection connection = null;
 
-    try { connection = DriverManager.getConnection(url, user, pwd); System.out.print ("conectado :)\n\n"); }
+    try 
+    { 
+        connection = DriverManager.getConnection(url, user, pwd); System.out.print ("conectado :)\n\n"); 
+        Statement stmt = connection.createStatement();
+        stmt.execute("use webdriver;"); 
+    }
     catch (SQLException e ) { e.printStackTrace(); }
+
+
 
 Scanner scan = new Scanner(System.in);
 int menu;
@@ -121,8 +236,21 @@ Integer num;
         switch (menu)
         {
 
-        case 1: 
-            if (resetarDatabase(connection)) { System.out.print("\n\n DB resetada com sucesso :)))\n\n");}
+        case 1:
+            verTabelaUsuarios(connection);
+            break;
+
+        case 2:
+            criarUsuario(connection, scan);
+            break;
+
+        case 4:
+            removerUsuario(connection, scan);
+            break;
+        
+
+        case 50: 
+            if (resetarDatabase(connection, scan)) { System.out.print("\n\n DB resetada com sucesso :)))\n\n");}
             else { System.out.print("\n\n deu ruim :(((\n\n"); }
             break;
 
