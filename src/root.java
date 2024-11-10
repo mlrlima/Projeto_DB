@@ -124,6 +124,9 @@ static void criarUsuario(Connection connection, Scanner scan) // conteudo aqui e
 {
     try 
     {
+    Statement stmt = connection.createStatement();
+    stmt.execute("use webdriver;");
+
     scan.nextLine();
     System.out.print("\nDigite o nome do novo usuario :\n>>>");
     String nome = scan.nextLine();
@@ -146,7 +149,6 @@ static void criarUsuario(Connection connection, Scanner scan) // conteudo aqui e
 
     System.out.print ("tabela pessoa adicionada :)\n"); // a partir daqui ta certo
     
-    Statement stmt = connection.createStatement();
     stmt.execute("CREATE USER '"+nome+"'@'localhost' IDENTIFIED BY '"+ senha +"';");
     System.out.print ("usuario adicionado :)\n\n");
 
@@ -192,6 +194,7 @@ static void verTabelaUsuarios(Connection connection)
 
 static void removerUsuario(Connection connection, Scanner scan)
 {
+
     scan.nextLine();
     System.out.print("\nDigite o ID do usuario que voce quer remover :\n\n>>>");
     String id = scan.nextLine();
@@ -199,6 +202,8 @@ static void removerUsuario(Connection connection, Scanner scan)
     try
     {
         Statement stmt = connection.createStatement();
+        stmt.execute("use webdriver;");
+
         ResultSet result = stmt.executeQuery("SELECT nome FROM Usuario WHERE (id = " + id + ");");
         while (result.next())
         {
@@ -226,7 +231,7 @@ public static void main(String[] args)
     { 
         connection = DriverManager.getConnection(url, user, pwd); System.out.print ("conectado :)\n\n"); 
         Statement stmt = connection.createStatement();
-        stmt.execute("use webdriver;"); 
+        //stmt.execute("use webdriver;"); // vai dar erro se a database nao existir
     }
     catch (SQLException e ) { e.printStackTrace(); }
 
