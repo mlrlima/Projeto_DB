@@ -109,7 +109,9 @@ static boolean resetarDatabase(Connection connection, Scanner scan)
         "FOREIGN KEY (id_resposta) REFERENCES Resposta(id_resposta)" +
         ");");
 
-
+    stmt.execute("DROP ROLE IF EXISTS usuario;"); // usuarios e roles ficam fora da db
+    stmt.execute("flush privileges;");
+    stmt.execute("CREATE ROLE usuario;");
 
     }
 
@@ -148,7 +150,12 @@ static void criarUsuario(Connection connection, Scanner scan) // conteudo aqui e
     stmt.execute("CREATE USER '"+nome+"'@'localhost' IDENTIFIED BY '"+ senha +"';");
     System.out.print ("usuario adicionado :)\n\n");
 
-    //String teste = ("CREATE USER '"+nome+"'@'localhost' IDENTIFIED BY '"+ senha +"';");
+
+    stmt.execute("GRANT usuario TO '"+nome+"'@localhost");
+    stmt.execute("SET DEFAULT ROLE usuario FOR 'jcd'@localhost;");
+
+
+
     }
     catch (SQLException e) { e.printStackTrace(); }
 }
