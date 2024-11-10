@@ -279,6 +279,62 @@ static void RootAlterUser(Connection connection, Scanner scan){
         e.printStackTrace();
     }
 }
+	static void alterarDadosPlano(Connection connection, Scanner scan) {
+        try {
+            scan.nextLine();
+            System.out.print("Digite o ID do plano que deseja alterar:\n>>> ");
+            int idPlano = scan.nextInt();
+            scan.nextLine();
+            System.out.print("Digite o novo nome do plano:\n>>> ");
+            String nome = scan.nextLine();
+            System.out.print("Digite a nova duracao do plano (hh:mm:ss):\n>>> ");
+            String duracao = scan.nextLine();
+            System.out.print("Digite o novo limite de usuarios:\n>>> ");
+            int limiteUsers = scan.nextInt();
+
+            PreparedStatement prep = connection.prepareStatement(
+                    "UPDATE Plano SET nome = ?, duracao = ?, limite_users = ? WHERE id = ?"
+            );
+            prep.setString(1, nome);
+            prep.setTime(2, Time.valueOf(duracao));
+            prep.setInt(3, limiteUsers);
+            prep.setInt(4, idPlano);
+            prep.executeUpdate();
+
+            System.out.println("Dados do plano alterados com sucesso.");
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+
+static void alterarDadosInstituicao(Connection connection, Scanner scan) {
+        try {
+            scan.nextLine();
+            System.out.print("Digite o ID da instituicao que deseja alterar:\n>>> ");
+            int idInstituicao = scan.nextInt();
+            scan.nextLine();
+            System.out.print("Digite o novo nome da instituicao:\n>>> ");
+            String nome = scan.nextLine();
+            System.out.print("Digite a nova causa social:\n>>> ");
+            String causaSocial = scan.nextLine();
+            System.out.print("Digite o novo endereco:\n>>> ");
+            String endereco = scan.nextLine();
+
+            PreparedStatement prep = connection.prepareStatement(
+                    "UPDATE Instituicao SET nome = ?, causa_social = ?, endereco = ? WHERE id = ?"
+            );
+            prep.setString(1, nome);
+            prep.setString(2, causaSocial);
+            prep.setString(3, endereco);
+            prep.setInt(4, idInstituicao);
+            prep.executeUpdate();
+
+            System.out.println("Dados da instituicao alterados com sucesso.");
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
 
 public static void main(String[] args) 
 {
