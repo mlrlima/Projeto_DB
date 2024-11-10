@@ -108,6 +108,27 @@ static boolean resetarDatabase(Connection connection)
         "FOREIGN KEY (id_resposta) REFERENCES Resposta(id_resposta)" +
         ");");
 
+        stmt.execute("create table Comentario("+
+                "id INT PRIMARY KEY NOT NULL AUTO_INCREMENT," +
+                "conteudo TEXT," +
+                "hora TIME," +
+                "data DATE," +
+                "id_usuario INT,"
+                +"id_arquivo INT,"
+                + "FOREIGN KEY (id_arquivo) REFERENCES Arquivo(id),"
+                + "FOREIGN KEY (id_usuario) REFERENCES Usuario(id) );"
+            );
+        stmt.execute("create table Compartilhamento("+
+        	"id INT PRIMARY KEY NOT NULL AUTO_INCREMENT," +
+                "id_usuario INT, "+
+                "id_arquivo INT, "+
+                "id_usuario_compartilhado INT,"+
+                "data DATE,"
+                + "FOREIGN KEY (id_usuario) REFERENCES Usuario(id),"
+                + "FOREIGN KEY (id_arquivo) REFERENCES Arquivo(id),"
+                + "FOREIGN KEY(id_usuario_compartilhado) REFERENCES Usuario(id));"
+            );
+
     stmt.execute("DROP ROLE IF EXISTS usuario;"); // usuarios e roles ficam fora da db
     stmt.execute("flush privileges;");
     stmt.execute("CREATE ROLE usuario;");
