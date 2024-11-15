@@ -130,18 +130,6 @@ static boolean resetarDatabase(Connection connection)
             );
 
 
-    /// functions e views e procedures e 
-    
-    stmt.execute("DROP FUNCTION IF EXISTS echoVarchar");
-    stmt.execute
-    (
-    "create function echoVarchar() returns VARCHAR(100) return @echoVarchar;" 
-    );
-    
-    stmt.execute("DROP VIEW IF EXISTS getUserID");
-    stmt.execute("CREATE SQL SECURITY DEFINER VIEW getUserID AS  "+
-    "select id FROM usuario where login = echoVarchar(); "
-    );
 
     //// coisas de pessoas e roles 
     /// 
@@ -154,7 +142,21 @@ static boolean resetarDatabase(Connection connection)
         stmt.execute("GRANT INSERT, UPDATE, DELETE on webdriver.Suporte to usuario;");
         stmt.execute("GRANT INSERT, UPDATE, DELETE on webdriver.Comentario to usuario;");
 
-        stmt.execute("GRANT SELECT on webdriver.getUserID to usuario;");
+
+    /// functions e views e procedures e 
+    
+    stmt.execute("DROP FUNCTION IF EXISTS echoVarchar");
+    stmt.execute
+    (
+    "create function echoVarchar() returns VARCHAR(100) return @echoVarchar;" 
+    );
+    
+    stmt.execute("DROP VIEW IF EXISTS getUserID");
+    stmt.execute("CREATE SQL SECURITY DEFINER VIEW getUserID AS  "+
+    "select id FROM Usuario where login = echoVarchar(); "
+    );
+    
+    stmt.execute("GRANT SELECT on webdriver.getUserID to usuario;");
 
     }
 
