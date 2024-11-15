@@ -104,8 +104,8 @@ static boolean resetarDatabase(Connection connection)
         "id_usuario INT," +
         "id_resposta INT," +
 
-        "FOREIGN KEY (id_usuario) REFERENCES Usuario(id)," +
-        "FOREIGN KEY (id_resposta) REFERENCES Resposta(id_resposta)" +
+        "FOREIGN KEY (id_usuario) REFERENCES Usuario(id) ON DELETE CASCADE," +
+        "FOREIGN KEY (id_resposta) REFERENCES Resposta(id_resposta) ON DELETE CASCADE" +
         ");");
 
         stmt.execute("create table Comentario("+
@@ -150,13 +150,26 @@ static boolean resetarDatabase(Connection connection)
     (
     "create function echoVarchar() returns VARCHAR(100) return @echoVarchar;" 
     );
+
+    stmt.execute("DROP FUNCTION IF EXISTS echoInt");
+    stmt.execute
+    (
+    "create function echoInt() returns INT return @echoInt;"
+    );
     
     stmt.execute("DROP VIEW IF EXISTS getUserID");
     stmt.execute("CREATE SQL SECURITY DEFINER VIEW getUserID AS  "+
     "select id FROM Usuario where login = echoVarchar(); "
     );
-    
     stmt.execute("GRANT SELECT on webdriver.getUserID to usuario;");
+
+
+    stmt.execute("DROP VIEW IF EXISTS verMeusSuportes");
+    stmt.execute("CREATE SQL SECURITY DEFINER VIEW verMeusSuportes AS  "+
+    "select descricao, data, hora, status FROM Suporte where id_usuario = echoInt(); "
+    );
+    stmt.execute("GRANT SELECT on webdriver.verMeusSuportes to usuario;");
+
 
     }
 
@@ -192,7 +205,7 @@ static void criarUsuario(Connection connection, Scanner scan) // conteudo aqui e
     prep.addBatch();
     prep.executeBatch();
 
-    System.out.print ("tabela pessoa adicionada :)\n"); // a partir daqui ta certo
+    System.out.print ("tabela pessoa adicionada :)\n"); 
     
     stmt.execute("CREATE USER '"+login+"'@'localhost' IDENTIFIED BY '"+ senha +"';");
     System.out.print ("usuario adicionado :)\n\n");
@@ -455,3 +468,4 @@ scan.close();
 
 }
 }
+
