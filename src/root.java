@@ -55,7 +55,7 @@ static boolean resetarDatabase(Connection connection)
         stmt.execute(
         "CREATE TABLE Usuario (" +
         "id INT PRIMARY KEY NOT NULL AUTO_INCREMENT," +
-        "nome VARCHAR(100) NOT NULL," +
+        "login VARCHAR(100) NOT NULL," +
         "email VARCHAR(100) NOT NULL," + 
         "senha VARCHAR(100) NOT NULL," +
         "id_instituicao INT," +
@@ -129,9 +129,32 @@ static boolean resetarDatabase(Connection connection)
                 + "FOREIGN KEY(id_usuario_compartilhado) REFERENCES Usuario(id));"
             );
 
-    stmt.execute("DROP ROLE IF EXISTS usuario;"); // usuarios e roles ficam fora da db
-    stmt.execute("flush privileges;");
-    stmt.execute("CREATE ROLE usuario;");
+
+    /// functions e views e procedures e 
+    
+    stmt.execute("DROP FUNCTION IF EXISTS echoVarchar");
+    stmt.execute
+    (
+    "create function echoVarchar() returns VARCHAR(100) return @echoVarchar;" 
+    );
+    
+    stmt.execute("DROP VIEW IF EXISTS getUserID");
+    stmt.execute("CREATE SQL SECURITY DEFINER VIEW getUserID AS  "+
+    "select id FROM usuario where login = echoVarchar(); "
+    );
+
+    //// coisas de pessoas e roles 
+    /// 
+        stmt.execute("DROP ROLE IF EXISTS usuario;"); // usuarios e roles ficam fora da db
+        stmt.execute("flush privileges;");
+        stmt.execute("CREATE ROLE usuario;");
+    
+        stmt.execute("GRANT INSERT, UPDATE, DELETE on webdriver.Arquivo to usuario;");
+        stmt.execute("GRANT INSERT, UPDATE, DELETE on webdriver.Compartilhamento to usuario;");
+        stmt.execute("GRANT INSERT, UPDATE, DELETE on webdriver.Suporte to usuario;");
+        stmt.execute("GRANT INSERT, UPDATE, DELETE on webdriver.Comentario to usuario;");
+
+        stmt.execute("GRANT SELECT on webdriver.getUserID to usuario;");
 
     }
 
@@ -148,8 +171,8 @@ static void criarUsuario(Connection connection, Scanner scan) // conteudo aqui e
     Statement stmt = connection.createStatement();
 
     scan.nextLine();
-    System.out.print("\nDigite o nome do novo usuario :\n>>>");
-    String nome = scan.nextLine();
+    System.out.print("\nDigite o login do novo usuario :\n>>>");
+    String login = scan.nextLine();
     System.out.print("\nDigite a senha do novo usuario :\n>>>");
     String senha = scan.nextLine();
     System.out.print("\nDigite o email do novo usuario :\n>>>");
@@ -157,9 +180,9 @@ static void criarUsuario(Connection connection, Scanner scan) // conteudo aqui e
     System.out.print("\nDigite a instituicao do novo usuario, ou 0 para nenhuma :\n>>>");
     String instituicao = scan.nextLine();
 
-    PreparedStatement prep = connection.prepareStatement("INSERT INTO Usuario (nome, email, senha, id_instituicao, id_admin) VALUES (?, ?, ?, ?, ?)", Statement.RETURN_GENERATED_KEYS);
+    PreparedStatement prep = connection.prepareStatement("INSERT INTO Usuario (login, email, senha, id_instituicao, id_admin) VALUES (?, ?, ?, ?, ?)", Statement.RETURN_GENERATED_KEYS);
 
-    prep.setString(1, nome);
+    prep.setString(1, login);
     prep.setString(2, email);
     prep.setString(3, senha);
     if (instituicao.equals("0")) { System.out.print("testeteste"); prep.setNull(4, Types.INTEGER); } else { prep.setString(4, instituicao); }
@@ -169,12 +192,12 @@ static void criarUsuario(Connection connection, Scanner scan) // conteudo aqui e
 
     System.out.print ("tabela pessoa adicionada :)\n"); // a partir daqui ta certo
     
-    stmt.execute("CREATE USER '"+nome+"'@'localhost' IDENTIFIED BY '"+ senha +"';");
+    stmt.execute("CREATE USER '"+login+"'@'localhost' IDENTIFIED BY '"+ senha +"';");
     System.out.print ("usuario adicionado :)\n\n");
 
 
-    stmt.execute("GRANT usuario TO '"+nome+"'@localhost");
-    stmt.execute("SET DEFAULT ROLE usuario FOR 'jcd'@localhost;");
+    stmt.execute("GRANT usuario TO '"+login+"'@localhost");
+    stmt.execute("SET DEFAULT ROLE usuario FOR '"+login+"'@localhost;");
 
 
 
@@ -194,7 +217,7 @@ static void verTabelaUsuarios(Connection connection)
         {
             System.out.print("\n----------------------------\n");
             System.out.print("ID : " + result.getInt("id") + "\n\n");
-            System.out.print("Nome : " + result.getString("nome") + "\n");
+            System.out.print("Login : " + result.getString("login") + "\n");
             System.out.print("Email : " + result.getString("email") + "\n");
             System.out.print("Senha : " + result.getString("senha") + "\n");
             System.out.print("Instituicao : " + result.getInt("id_instituicao") + "\n"); // retorna 0 caso seja nulo?
@@ -222,11 +245,11 @@ static void removerUsuario(Connection connection, Scanner scan)
     {
         Statement stmt = connection.createStatement();
 
-        ResultSet result = stmt.executeQuery("SELECT nome FROM Usuario WHERE (id = " + id + ");");
+        ResultSet result = stmt.executeQuery("SELECT login FROM Usuario WHERE (id = " + id + ");");
         while (result.next())
         {
             stmt.execute("DELETE FROM Usuario WHERE (id = " + id + ");");
-            stmt.execute("DROP USER '" + result.getString("nome") + "'@localhost;");
+            stmt.execute("DROP USER '" + result.getString("login") + "'@localhost;");
             stmt.execute("flush privileges;");
             
             System.out.print("\nUsuario removido com sucesso.\n"); return;
@@ -244,11 +267,11 @@ static void RootAlterUser(Connection connection, Scanner scan){
     int action;
     try{
        Statement stmt = connection.createStatement();
-       ResultSet result = stmt.executeQuery("SELECT nome FROM Usuario WHERE (id = " + id + ");");
+       ResultSet result = stmt.executeQuery("SELECT login FROM Usuario WHERE (id = " + id + ");");
        
        if (result.next()) {
 	       System.out.print("\nDigite o novo nome do usuario\n>>> ");
-    	   String name = scan.nextLine();
+    	   String login = scan.nextLine();
     	   System.out.print("\nDigite o novo email do usuario\n>>> ");
     	   String email = scan.nextLine();
     	   System.out.print("\nDigite a nova senha do usuario\n>>> ");
@@ -256,8 +279,8 @@ static void RootAlterUser(Connection connection, Scanner scan){
     	   //System.out.print("\nDigite a nova instituição do usuario\n>>> ");
     	   //String instituicao = scan.nextLine();
     	   
-	       if (name != "") {
-	    	   stmt.execute("UPDATE Usuario SET nome = '" + name + "' WHERE (id = " + id + ");");
+	       if (login != "") {
+	    	   stmt.execute("UPDATE Usuario SET login = '" + login + "' WHERE (id = " + id + ");");
 	       }
            System.out.print("teste 1\n");
 	       if (email != "") {
@@ -272,6 +295,7 @@ static void RootAlterUser(Connection connection, Scanner scan){
 	    	//   stmt.execute("UPDATE Usuario SET id_instituicao = " + instituicao + " WHERE (id = " + id + ");");
 	       //}
            System.out.print("\nteste 4\n");
+
        }
     }
 
@@ -308,7 +332,6 @@ static void alterarDadosPlano(Connection connection, Scanner scan) {
         }
 }
 
-
 static void alterarDadosInstituicao(Connection connection, Scanner scan) {
         try {
             scan.nextLine();
@@ -336,6 +359,28 @@ static void alterarDadosInstituicao(Connection connection, Scanner scan) {
             e.printStackTrace();
         }
     }
+
+
+static void teste(Connection connection)
+{
+    try
+    {
+        Statement stmt = connection.createStatement();
+        ResultSet result = stmt.executeQuery("SELECT @echoVarchar:='teste';");
+        result.next();
+            System.out.print(result.getString(1) + "\n\n");
+
+
+            ResultSet resultado = stmt.executeQuery("SELECT * from (select @echoVarChar:='jcd' p) parametro, getUserID;"  );
+            resultado.next();
+            System.out.print(resultado.getInt("id") + "\n\n");
+            System.out.print(resultado.getInt(2) + "\n\n");
+            //System.out.print(resultado.getString(1) + "\n\n");
+            //System.out.print(resultado.getString("p") + "\n\n");
+        
+
+    } catch ( SQLException e ) { e.printStackTrace(); }
+}
 
 public static void main(String[] args) 
 {
@@ -383,6 +428,10 @@ Integer num;
 
         case 5:
             RootAlterUser(connection, scan);
+            break;
+
+        case 6: 
+            teste(connection);
             break;
         
 
