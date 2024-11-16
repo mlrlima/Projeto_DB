@@ -71,16 +71,17 @@ static boolean resetarDatabase(Connection connection)
         (  
         "CREATE TABLE Arquivo (" +
         "id INT PRIMARY KEY NOT NULL AUTO_INCREMENT," +
+        "conteudo TEXT," +
+        "nome VARCHAR(100) NOT NULL," +
         "tipo VARCHAR(100) NOT NULL," +
         "permissoes INT," +
         "data_alteracao DATE," +
-        "tamanho VARCHAR(100) NOT NULL," +
-        "url VARCHAR(100) NOT NULL," +
+        "tamanho BIGINT UNSIGNED," +
+        "url VARCHAR(100)," +
         "localizacao VARCHAR(100) NOT NULL," +
         "id_dono INT," +
-            
-        "CONSTRAINT fk_id_dono " +
-        "FOREIGN KEY (id_dono) REFERENCES Usuario(id)" +");"    
+    
+        "FOREIGN KEY (id_dono) REFERENCES Usuario(id) ON DELETE CASCADE" +");"    
         ); 
 
         stmt.execute
