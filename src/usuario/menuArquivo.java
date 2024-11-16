@@ -1,58 +1,127 @@
 package usuario;
-
-import java.util.Scanner;
 import java.sql.*;
+import java.util.ArrayList;
 import java.util.InputMismatchException;
+import java.util.Scanner;
 
-public class menuArquivo {
+@SuppressWarnings("unused")
+
+public class MenuArquivo 
+{
     Usuario user;
 
-    public void MenuArquivo(Usuario user){
+    public MenuArquivo (Usuario user) // construtor
+    {
         this.user = user;
     }
-
-    public void menu(Scanner scan, Connection connection){
+    
+    public void menu(Scanner scan, Connection connection) 
+    {
         int menu = 10;
+        do
+        {
+            System.out.print("\n\n------------------------\n O que voce quer fazer agora?\n\n [1] - criar arquivo\n [2] - meus arquivos\n [3] - ver arquivos compartilhados comigo\n [4] - ver arquivos compartilhados com a instituicao\n [0] - sair\n\n   >>>");
+            try {menu = scan.nextInt(); } 
+		    catch (InputMismatchException e)
+		    { scan.next(); menu = 10; }
 
-        while (menu != 0){
-            System.out.print("\n\nArquivos\n------------------------\n\n[1] - Ver Arquivos\n[2] - Carregar arquivo\n[3] - Compartilhar arquivo\n[4] - alterar autorização do arquivo\n[5] - alterar o conteudo do arquivo\n[6] - arquivos compartilhados comigo\n[7] - remover arquivo\n[8] - fazer comentario\n[0] - sair\n");
-            try{
-                menu = scan.nextInt();
+            switch (menu)
+            {   
+                case 1 :  criarArquivo(scan, connection); break;
+                case 2 :  meusArquivos(scan, connection); break;
+                case 3 :  break;
+                case 0 :  break;
+                default: System.out.print("\n Entrada invalida!\n"); menu = 10; break;
             }
-            catch(InputMismatchException e){
-                scan.next(); menu = 10;
+
+        } while (menu != 0);
+    }
+
+    private void meusArquivos(Scanner scan, Connection connection) 
+    {
+        ArrayList<Arquivo> arquivos = new ArrayList<>();
+        Arquivo arquivo;
+
+        try
+        {
+            String tipo, conteudo, data_alteracao, url, nome;
+            int permissoes;
+            Integer tamanho;
+
+            Statement stmt = connection.createStatement();
+            ResultSet result;
+            result = stmt.executeQuery("SELECT conteudo, nome, tipo, permissoes, data_alteracao, tamanho, url FROM (select @echoInt:="+this.user.id+" p) parametro, verMeusArquivos");
+            while (result.next())
+            {
+                conteudo = result.getString("conteudo");
+                nome = result.getString("nome");
+                tipo = result.getString("tipo");
+                permissoes = result.getInt("permissoes");
+                data_alteracao = result.getDate("data_alteracao").toString();
+                tamanho = result.getInt("tamanho");
+                url = result.getString("url");
+
+                arquivo = new Arquivo();
+                arquivo.conteudo = conteudo; arquivo.nome = nome; arquivo.tipo = tipo; arquivo.permissoes = permissoes; arquivo.data_alteracao = data_alteracao; arquivo.tamanho = tamanho; arquivo.url = url;
+                arquivos.add(arquivo);
             }
 
-            switch (menu) {
-                case 1: meusArquivos(scan, connection); break;
-                case 2: criarArquivo(scan, connection); break;
-                case 3: CompartilharArquivo(scan, connection); break;
-                case 4: break;
-                case 5: alterarArquivo(scan, connection); break;
-                case 6: arquivosCompartilhadosComigo(scan, connection);
-                case 7: removerArquivo(scan, connection); break;
-                case 8: break;
-                case 0: System.out.print("\n Good Bye");
-                default: System.out.println("\nOpção Invalida!"); break;
+            if (arquivos.size() == 0) 
+            { 
+                System.out.print("\n\n------------------------\n Atualmente, voce nao e dono de nenhum arquivo!");
+                scan.nextLine();
+                System.out.print("\n\nAperte Enter para voltar. ");
+                scan.nextLine();
+                return;
             }
-        }
 
+            int menu = 10;
+
+            do
+            {
+                for (int i = 0; i < arquivos.size(); i++ )
+                {
+                    arquivo = arquivos.get(i);
+                    System.out.print("------------------------\n");
+                    System.out.print("["+(i+1)+"]\n");
+                    System.out.print(arquivo.nome + "." + arquivo.tipo + "\n");
+                    if (arquivo.permissoes == 0) {System.out.print("privado\n");}
+                    else {System.out.print("compartilhado\n");}
+                    System.out.print("tamanho : " + arquivo.tamanho + "bytes\n");
+                    //System.out.print("Status : ");
+                }
+                System.out.print("------------------------\n");
+                System.out.print("\n\n Selecione o arquivo que voce quer ver, ou [0] para voltar.\n\n >>>");
+
+                try {menu = scan.nextInt(); } 
+		        catch (InputMismatchException e)
+		        { scan.next(); menu = 10; }
+
+                if (menu == 0) { return; }
+                else if (menu > 0 && menu <= arquivos.size()) 
+                {
+                    // menu do arquivo
+                }
+                else { System.out.print("\n Entrada invalida!\n"); menu = 10; }
+
+
+            } while (menu != 0);
+
+        }   catch (SQLException e) { e.printStackTrace(); }
     }
 
-    private void meusArquivos(Scanner scan, Connection connection){
-
+    private void arquivosCompartilhadosComigo(Scanner scan, Connection connection) 
+    {
+        // aqui o cara seleciona as coisas
     }
 
-    private void arquivosIntituicao(Scanner scan, Connection connection){
-
+    private void arquivosInstituicao(Scanner scan, Connection connection) 
+    {
+        // aqui o cara seleciona as coisas
     }
 
-    private void fazerComentarios(Scanner scan, Connection connection){
 
-    }
-    private void arquivosCompartilhadosComigo(Scanner scan, Connection connection){
 
-    }
     private void criarArquivo(Scanner scan, Connection connection){
         Statement stmt;
         try{
@@ -104,22 +173,22 @@ public class menuArquivo {
         }
     }
 
-    private void CompartilharArquivo(Scanner scan, Connection connection){
 
-    }
 
-    private void alterarArquivo(Scanner scan, Connection connection){
 
-    }
-
-    private void removerArquivo(Scanner scan, Connection connection){
-
-    }
-    private class Arquivo {
+    private class Arquivo
+    {
+        String nome;
+        String conteudo;
         String tipo;
         int permissoes;
         String data_alteracao;
-        String tamanho;
+        Integer tamanho; 
         String url;
+
+        // "select a.conteudo, a.tipo, a.permissoes, a.data_alteracao, a.tamanho, a.url FROM Arquivo a LEFT JOIN Usuario u on (a.id_dono = u.id) where id_dono = echoInt(); "
+
     }
+
 }
+
