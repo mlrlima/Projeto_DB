@@ -9,7 +9,7 @@ public class root
 
 static void opcoes()
 {
-    System.out.print("\n\n---------------------------\nOpcoes :\n1- ver todos os usuarios\n2- inserir usuario\n4- remover usuario\n5- alterar dados de um usuario\n50- resetar database\n\n>>>");
+    System.out.print("\n\n---------------------------\nOpcoes :\n1- ver todos os usuarios\n2- inserir usuario\n4- remover usuario\n5- alterar dados de um usuario\n6- dar privilegios de admin para um usuario\n50- resetar database\n\n>>>");
 }
 
 static boolean resetarDatabase(Connection connection)
@@ -49,7 +49,7 @@ static boolean resetarDatabase(Connection connection)
         stmt.execute
         (
         "CREATE TABLE Administrador" +
-        "(id INT PRIMARY KEY NOT NULL AUTO_INCREMENT);" 
+        "(id INT PRIMARY KEY NOT NULL);" 
         );
 
         stmt.execute(
@@ -90,7 +90,8 @@ static boolean resetarDatabase(Connection connection)
         "id_admin INT," +
         
         "CONSTRAINT fk_id_admin " +
-        "FOREIGN KEY (id_admin) REFERENCES Administrador(id)" + ");"
+        "FOREIGN KEY (id_admin) REFERENCES Administrador(id) ON DELETE CASCADE" + 
+        ");"
         ); 
 
         stmt.execute
@@ -136,11 +137,15 @@ static boolean resetarDatabase(Connection connection)
         stmt.execute("DROP ROLE IF EXISTS usuario;"); // usuarios e roles ficam fora da db
         stmt.execute("flush privileges;");
         stmt.execute("CREATE ROLE usuario;");
-    
         stmt.execute("GRANT INSERT, UPDATE, DELETE on webdriver.Arquivo to usuario;");
         stmt.execute("GRANT INSERT, UPDATE, DELETE on webdriver.Compartilhamento to usuario;");
         stmt.execute("GRANT INSERT, UPDATE, DELETE on webdriver.Suporte to usuario;");
         stmt.execute("GRANT INSERT, UPDATE, DELETE on webdriver.Comentario to usuario;");
+
+        stmt.execute("DROP ROLE IF EXISTS admin;");
+        stmt.execute("flush privileges;");
+        stmt.execute("CREATE ROLE admin;");
+        stmt.execute("GRANT ALL PRIVILEGES on webdriver.* to admin;");
 
 
     /// functions e views e procedures e 
@@ -159,14 +164,14 @@ static boolean resetarDatabase(Connection connection)
     
     stmt.execute("DROP VIEW IF EXISTS getUserID");
     stmt.execute("CREATE SQL SECURITY DEFINER VIEW getUserID AS  "+
-    "select id FROM Usuario where login = echoVarchar(); "
+    "select id, id_admin FROM Usuario where login = echoVarchar(); "
     );
     stmt.execute("GRANT SELECT on webdriver.getUserID to usuario;");
 
 
     stmt.execute("DROP VIEW IF EXISTS verMeusSuportes");
     stmt.execute("CREATE SQL SECURITY DEFINER VIEW verMeusSuportes AS  "+
-    "select descricao, data, hora, status FROM Suporte where id_usuario = echoInt(); "
+    "select s.descricao, s.data, s.hora, s.status, r.descricao as resposta FROM Suporte s LEFT JOIN Resposta r on(s.id_resposta = r.id_resposta) where id_usuario = echoInt()  ; "
     );
     stmt.execute("GRANT SELECT on webdriver.verMeusSuportes to usuario;");
 
@@ -200,7 +205,7 @@ static void criarUsuario(Connection connection, Scanner scan) // conteudo aqui e
     prep.setString(1, login);
     prep.setString(2, email);
     prep.setString(3, senha);
-    if (instituicao.equals("0")) { System.out.print("testeteste"); prep.setNull(4, Types.INTEGER); } else { prep.setString(4, instituicao); }
+    if (instituicao.equals("0")) { System.out.print("testeteste"); prep.setNull(4, Types.INTEGER); } // else { prep.setString(4, instituicao); }// nao eh string!! e pra ser id!
     prep.setNull(5, Types.INTEGER);
     prep.addBatch();
     prep.executeBatch();
@@ -235,14 +240,14 @@ static void verTabelaUsuarios(Connection connection)
             System.out.print("Login : " + result.getString("login") + "\n");
             System.out.print("Email : " + result.getString("email") + "\n");
             System.out.print("Senha : " + result.getString("senha") + "\n");
-            System.out.print("Instituicao : " + result.getInt("id_instituicao") + "\n"); // retorna 0 caso seja nulo?
+            System.out.print("Instituicao : " + result.getInt("id_instituicao") + "\n"); // retorna 0 caso seja nulo? 
             System.out.print("Admin : ");
             
             admincheck = result.getInt("id_admin");
-            if (admincheck == null)
+            if (admincheck == 0)
             {  System.out.print("Nao\n");  }
             else
-            {  System.out.print("Sim\n");  }
+            {  System.out.print(admincheck + "\n");  }
 
         }
     }
@@ -251,7 +256,6 @@ static void verTabelaUsuarios(Connection connection)
 
 static void removerUsuario(Connection connection, Scanner scan)
 {
-
     scan.nextLine();
     System.out.print("\nDigite o ID do usuario que voce quer remover :\n\n>>>");
     String id = scan.nextLine();
@@ -260,10 +264,11 @@ static void removerUsuario(Connection connection, Scanner scan)
     {
         Statement stmt = connection.createStatement();
 
-        ResultSet result = stmt.executeQuery("SELECT login FROM Usuario WHERE (id = " + id + ");");
+        ResultSet result = stmt.executeQuery("SELECT login, id_admin FROM Usuario WHERE (id = " + id + ");");
         while (result.next())
         {
             stmt.execute("DELETE FROM Usuario WHERE (id = " + id + ");");
+            stmt.execute("DELETE FROM Administrador WHERE (id = " + result.getInt("id_admin") + ");");
             stmt.execute("DROP USER '" + result.getString("login") + "'@localhost;");
             stmt.execute("flush privileges;");
             
@@ -319,6 +324,37 @@ static void RootAlterUser(Connection connection, Scanner scan){
     }
 }
 
+static void grantAdmin(Connection connection, Scanner scan)
+{
+    scan.nextLine();
+    System.out.print("\nDigite o ID do usuario que voce quer dar privilegios de admin:\n\n>>>");
+    String id = scan.nextLine();
+
+    try
+    {
+        Statement stmt = connection.createStatement();
+        ResultSet result = stmt.executeQuery("SELECT login, id_admin from Usuario WHERE (id = " + id + ");");
+        if (!(result.next())) { System.out.print ("ID de usuario nao encontrado!\n"); return; }
+        String login = result.getString("login");
+
+        System.out.print("\nDigite o novo ID de admin desse usuario (por favor nao seja 0) : ");
+        int new_admin_id = scan.nextInt();
+
+        PreparedStatement prep = connection.prepareStatement("INSERT INTO Administrador (id) VALUES (?)", Statement.RETURN_GENERATED_KEYS);
+        prep.setInt(1, new_admin_id);
+        prep.addBatch();
+        prep.executeBatch();
+
+        System.out.print ("adicionado na tabela admin :)\n"); 
+        stmt.execute("UPDATE Usuario SET id_admin = " + new_admin_id + " WHERE (id = " + id + ");");
+        System.out.print ("fk adicionada :)\n"); 
+        stmt.execute("GRANT admin TO '"+login+"'@localhost");
+        stmt.execute("SET DEFAULT ROLE admin FOR '"+login+"'@localhost;");
+        System.out.print ("role atualizada com sucesso :)\n"); 
+        
+    } 
+    catch (SQLException e ) { e.printStackTrace(); }
+}
 static void alterarDadosPlano(Connection connection, Scanner scan) {
         try {
             scan.nextLine();
@@ -445,7 +481,11 @@ Integer num;
             RootAlterUser(connection, scan);
             break;
 
-        case 6: 
+        case 6:
+            grantAdmin(connection, scan);
+            break;
+
+        case 8: 
             teste(connection);
             break;
         
