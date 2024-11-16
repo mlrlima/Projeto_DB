@@ -58,6 +58,7 @@ static boolean resetarDatabase(Connection connection)
         "login VARCHAR(100) NOT NULL," +
         "email VARCHAR(100) NOT NULL," + 
         "senha VARCHAR(100) NOT NULL," +
+        "data_ingresso DATE NOT NULL," +
         "id_instituicao INT," +
         "id_admin INT," +
 
@@ -162,11 +163,11 @@ static boolean resetarDatabase(Connection connection)
     "create function echoInt() returns INT return @echoInt;"
     );
     
-    stmt.execute("DROP VIEW IF EXISTS getUserID");
-    stmt.execute("CREATE SQL SECURITY DEFINER VIEW getUserID AS  "+
-    "select id, id_admin FROM Usuario where login = echoVarchar(); "
+    stmt.execute("DROP VIEW IF EXISTS getUserInfo");
+    stmt.execute("CREATE SQL SECURITY DEFINER VIEW getUserInfo AS  "+
+    "select id, id_admin, email, data_ingresso, id_instituicao FROM Usuario where login = echoVarchar(); "
     );
-    stmt.execute("GRANT SELECT on webdriver.getUserID to usuario;");
+    stmt.execute("GRANT SELECT on webdriver.getUserInfo to usuario;");
 
 
     stmt.execute("DROP VIEW IF EXISTS verMeusSuportes");
@@ -200,13 +201,17 @@ static void criarUsuario(Connection connection, Scanner scan) // conteudo aqui e
     System.out.print("\nDigite a instituicao do novo usuario, ou 0 para nenhuma :\n>>>");
     String instituicao = scan.nextLine();
 
-    PreparedStatement prep = connection.prepareStatement("INSERT INTO Usuario (login, email, senha, id_instituicao, id_admin) VALUES (?, ?, ?, ?, ?)", Statement.RETURN_GENERATED_KEYS);
+    ResultSet result = stmt.executeQuery("SELECT CURDATE();");
+    result.next();
+
+    PreparedStatement prep = connection.prepareStatement("INSERT INTO Usuario (login, email, senha, data_ingresso, id_instituicao, id_admin) VALUES (?, ?, ?, ?, ?, ?)", Statement.RETURN_GENERATED_KEYS);
 
     prep.setString(1, login);
     prep.setString(2, email);
     prep.setString(3, senha);
-    if (instituicao.equals("0")) { System.out.print("testeteste"); prep.setNull(4, Types.INTEGER); } // else { prep.setString(4, instituicao); }// nao eh string!! e pra ser id!
-    prep.setNull(5, Types.INTEGER);
+    prep.setDate(4, java.sql.Date.valueOf(result.getString(1)));
+    if (instituicao.equals("0")) { System.out.print("testeteste"); prep.setNull(5, Types.INTEGER); } // else { prep.setString(5, instituicao); }// nao eh string!! e pra ser id!
+    prep.setNull(6, Types.INTEGER);
     prep.addBatch();
     prep.executeBatch();
 
@@ -240,6 +245,7 @@ static void verTabelaUsuarios(Connection connection)
             System.out.print("Login : " + result.getString("login") + "\n");
             System.out.print("Email : " + result.getString("email") + "\n");
             System.out.print("Senha : " + result.getString("senha") + "\n");
+            System.out.print("Data de ingresso : " + result.getDate("data_ingresso").toString() + "\n");
             System.out.print("Instituicao : " + result.getInt("id_instituicao") + "\n"); // retorna 0 caso seja nulo? 
             System.out.print("Admin : ");
             
@@ -422,7 +428,7 @@ static void teste(Connection connection)
             System.out.print(result.getString(1) + "\n\n");
 
 
-            ResultSet resultado = stmt.executeQuery("SELECT * from (select @echoVarChar:='jcd' p) parametro, getUserID;"  );
+            ResultSet resultado = stmt.executeQuery("SELECT * from (select @echoVarChar:='jcd' p) parametro, getUserInfo;"  );
             resultado.next();
             System.out.print(resultado.getInt("id") + "\n\n");
             System.out.print(resultado.getInt(2) + "\n\n");
@@ -508,4 +514,3 @@ scan.close();
 
 }
 }
-
