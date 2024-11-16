@@ -11,6 +11,7 @@ public class Usuario
     String login;
     String email;
     String instituicao;
+    String data_ingresso;
 
     private void setup(Connection connection)  // adicionar o resto das informacoes tipo email, instituicao, quantidade de espaco usado, etc depois
     {
@@ -28,9 +29,11 @@ public class Usuario
         login = login.substring(0, login.length()-10); 
         this.login = login;
         
-        result = stmt.executeQuery("SELECT id, id_admin from (select @echoVarChar:='"+this.login+"' p) parametro, getUserID;");
+        result = stmt.executeQuery("SELECT id, data_ingresso, email, id_admin from (select @echoVarChar:='"+this.login+"' p) parametro, getUserInfo;");
         result.next();
         this.id = result.getInt("id");
+        this.email = result.getString("email");
+        this.data_ingresso = result.getDate("data_ingresso").toString();
 
         if (result.getInt("id_admin") != 0) { Admin admin = new Admin(result.getInt("id_admin")); admin.menu(connection); System.exit(0); }
 
@@ -89,6 +92,9 @@ public class Usuario
         System.out.print("\n\n(WIP : completar essa pagina depois)\n------------------------ ");
         System.out.print("\nID : " + this.id);
         System.out.print("\nLogin : " + this.login);
+        System.out.print("\nEmail : " + this.email);
+        System.out.print("\nData de ingresso : " + this.data_ingresso);
+        System.out.print("\n------------------------");
         System.out.print("\n\nAperte Enter para voltar. ");
         scan.nextLine();
     }
@@ -199,14 +205,18 @@ public class Usuario
             {
                 suporte = suportes.get(menu-1);
                 System.out.print("\n-------------------------------\n\n");
+                System.out.print("Pedido :\n\n");
                 System.out.print(suporte.conteudo);
-                System.out.print("\n-------------------------------\n\n");
-                System.out.print("Resposta :\n\n");
-                if (suporte.status == 1) { System.out.print(suporte.resposta); }
-                else {System.out.print("<nao respondido>");}
+                System.out.print("\n-------------------------------\n");
+                if (suporte.status == 1) 
+                { System.out.print("\nResposta :\n\n"); 
+                  System.out.print(suporte.resposta); 
+                  System.out.print("\n-------------------------------\n\n");
+                }
+                else {System.out.print("<aguardando resposta>\n\n");}
 
                 scan.nextLine();
-                System.out.print("\n-------------------------------\n\n Aperte enter para voltar.");
+                System.out.print(" Aperte enter para voltar.");
                 scan.nextLine();
 
             }
@@ -220,6 +230,14 @@ public class Usuario
         
     }
 
+
+
+
+
+    ///////////////////////////////////////// admin ////////////////////////////////////////
+    //////////////////////////////////////// admin ////////////////////////////////////////
+    /////////////////////////////////////// admin /////////////////////////////////////////
+    
     private class Suporte
     {
         String conteudo;
