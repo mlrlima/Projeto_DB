@@ -177,6 +177,12 @@ static boolean resetarDatabase(Connection connection)
     );
     stmt.execute("GRANT SELECT on webdriver.verMeusSuportes to usuario;");
 
+    stmt.execute("DROP VIEW IF EXISTS verMeusArquivos");
+    stmt.execute("CREATE SQL SECURITY DEFINER VIEW verMeusArquivos AS  "+
+    "select a.conteudo, a.nome, a.tipo, a.permissoes, a.data_alteracao, a.tamanho, a.url FROM Arquivo a LEFT JOIN Usuario u on (a.id_dono = u.id) where id_dono = echoInt(); "
+    );
+    stmt.execute("GRANT SELECT on webdriver.verMeusArquivos to usuario;");
+
 
     }
 
