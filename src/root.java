@@ -163,6 +163,7 @@ static boolean resetarDatabase(Connection connection)
     (
     "create function echoInt() returns INT return @echoInt;"
     );
+
     
     stmt.execute("DROP VIEW IF EXISTS getUserInfo");
     stmt.execute("CREATE SQL SECURITY DEFINER VIEW getUserInfo AS  "+
@@ -193,6 +194,52 @@ static boolean resetarDatabase(Connection connection)
         "end if; "+
         "END"
     );
+
+    stmt.execute("CREATE DEFINER=`root`@`localhost` PROCEDURE IF NOT EXISTS getArqID" +
+    "(IN thisid INT, IN nomeConfirm VARCHAR(100), IN tipoConfirm VARCHAR(100), OUT result INT ) " +
+    "BEGIN " +
+    "DECLARE checkPerm INT; " +
+    "SET checkPerm = ( SELECT EXISTS ( SELECT * FROM Arquivo a LEFT JOIN Usuario u on (a.id_dono = u.id) WHERE (id_dono = thisid) AND (tipo = tipoConfirm) AND (nome = nomeConfirm) ) AS result); " +
+    "if checkPerm = 1 then " +
+    "SET result = ( SELECT a.id FROM Arquivo a LEFT JOIN Usuario u on (a.id_dono = u.id) WHERE  (id_dono = thisid) AND (tipo = tipoConfirm) AND (nome = nomeConfirm)); " +
+    "SET checkPerm = 2; " +
+    "end if; " +
+
+    "if checkPerm = 0 then " + 
+    "SET checkPerm = ( SELECT EXISTS ( SELECT * from Arquivo a LEFT JOIN Compartilhamento c on (a.id_dono = c.id_dono) WHERE (tipo = tipoConfirm) AND (nome = nomeConfirm) AND (id_usuario_compartilhado = thisid)  ) AS result); " +
+    "end if; " +
+    "if checkPerm = 0 then " +
+    "signal sqlstate '45000' set message_text = 'Erro : Nao tem permissao pra ver o arquivo!'; SET result = checkPerm; " +
+    "end if; " +
+    "if checkPerm = 1 then " +
+    "SET result = (SELECT a.id from Arquivo a LEFT JOIN Compartilhamento c on (a.id_dono = c.id_dono) WHERE (tipo = tipoConfirm) AND (nome = nomeConfirm) AND (id_usuario_compartilhado = thisid) ); " +
+    "end if; " +
+    "END"
+    );
+
+    stmt.execute("CREATE DEFINER=`root`@`localhost` PROCEDURE IF NOT EXISTS getQtdCompartilhamentos" +
+   "(IN ownerid INT, in nomeConfirm VARCHAR(100), IN tipoConfirm VARCHAR(100), OUT result INT) " +
+   "BEGIN " +
+   "CALL getArqID(ownerid, nomeConfirm, tipoConfirm, @arqID); " +
+   "SET result = ( SELECT COUNT (@arqID) FROM Compartilhamento ); " +
+   "END"
+   );
+   stmt.execute("GRANT EXECUTE ON PROCEDURE webdriver.getQtdCompartilhamentos to usuario;");
+
+
+   stmt.execute("CREATE DEFINER=`root`@`localhost` PROCEDURE IF NOT EXISTS Remover_Acessos" +
+   "(IN ownerid INT, in nomeConfirm VARCHAR(100), IN tipoConfirm VARCHAR(100)) " +
+   "BEGIN " +
+   "CALL getArqID(ownerid, nomeConfirm, tipoConfirm, @arqID); " +
+   "DELETE FROM Compartilhamento WHERE (id = @arqID); " +
+   "END"
+   );
+   stmt.execute("GRANT EXECUTE ON PROCEDURE webdriver.Remover_Acessos to usuario;");
+
+
+
+
+
     stmt.execute( "CREATE DEFINER=`root`@`localhost` PROCEDURE IF NOT EXISTS compartilharArquivo" +
                 " (IN ownerID INT, IN tipoConfirm VARCHAR(100), IN nomeConfirm VARCHAR(100), IN targetlogin VARCHAR(100))" +
                 "BEGIN " +
@@ -202,7 +249,6 @@ static boolean resetarDatabase(Connection connection)
                 "DECLARE id_arq INT; " +
                 "DECLARE id_target INT; " +
                 "SET checkOwner = (SELECT EXISTS (SELECT * FROM Arquivo a LEFT JOIN Usuario u on (a.id_dono = u.id) WHERE (id_dono = ownerID) ) AS result); " +
-
                 "if checkOwner = 0 then " +
                 "signal sqlstate '45000' set message_text = 'Erro : Nao e dono do arquivo!'; " +
                 "end if; " +
@@ -549,8 +595,8 @@ Integer num;
         
 
         case 50: 
-            if (resetarDatabase(connection)) { System.out.print("\n\n DB resetada com sucesso :)))\n\n");}
-            else { System.out.print("\n\n deu ruim :(((\n\n"); }
+            if (resetarDatabase(connection)) { System.out.print("\n\n DB resetada com sucesso :)))");}
+            else { System.out.print("\n\n deu ruim :((("); }
             break;
 
         default:
