@@ -579,7 +579,7 @@ public static void main(String[] args)
         
     String url = "jdbc:mariadb://localhost:3306";
     String user = "root";
-    String pwd = "password";
+    String pwd = "dP@&XhfW5e#*SBXvGN#972W66%8";
     Connection connection = null;
 
     try 

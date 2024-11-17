@@ -49,14 +49,15 @@ public class Usuario
         int menu = 10;
         do
         {
-            System.out.print("\n\n------------------------\n O que voce quer fazer agora?\n\n [1] - ver perfil\n [6] - suporte\n [0] - sair\n\n   >>>");
+            System.out.print("\n\n------------------------\n O que voce quer fazer agora?\n\n [1] - ver perfil\n [2] - ver arquivos\n [6] - suporte\n [0] - sair\n\n   >>>");
             try {menu = scan.nextInt(); } 
 		    catch (InputMismatchException e)
 		    { scan.next(); menu = 10; }
 
             switch (menu)
-            {
+            {   
                 case 1 : perfil(scan); break;
+                case 2 : MenuArquivo arquivo = new MenuArquivo(this); arquivo.menu(scan, connection); break;
                 case 6 : menuSuporte(scan, connection); break;
                 case 0 : System.out.print("\n   :(\n"); break;
                 default: System.out.print("\n Entrada invalida!\n"); menu = 10; break;
@@ -231,13 +232,6 @@ public class Usuario
     }
 
 
-
-
-
-    ///////////////////////////////////////// admin ////////////////////////////////////////
-    //////////////////////////////////////// admin ////////////////////////////////////////
-    /////////////////////////////////////// admin /////////////////////////////////////////
-    
     private class Suporte
     {
         String conteudo;
@@ -246,8 +240,12 @@ public class Usuario
         String data;
         String hora;
 
-        int id; // nao acessivel pelas visoes
+        int id; // nao acessivel pelas visoes do usuario normal
     }
+
+    ///////////////////////////////////////// admin ////////////////////////////////////////
+    //////////////////////////////////////// admin ////////////////////////////////////////
+    /////////////////////////////////////// admin /////////////////////////////////////////
 
     private class Admin extends Usuario
     {
