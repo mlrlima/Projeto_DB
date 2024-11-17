@@ -29,7 +29,7 @@ public class MenuArquivo
             {   
                 case 1 :  criarArquivo(scan, connection); break;
                 case 2 :  meusArquivos(scan, connection); break;
-                case 3 :  break;
+                case 3 :  arquivosCompartilhadosComigo(scan, connection); break;
                 case 4 :  break;
                 case 0 :  break;
                 default: System.out.print("\n Entrada invalida!\n"); menu = 10; break;
@@ -66,7 +66,7 @@ public class MenuArquivo
                     System.out.print(arquivo.nome + "." + arquivo.tipo + "\n");
                     if (arquivo.permissoes == 0) {System.out.print("privado\n");}
                     else {System.out.print("compartilhado\n");}
-                    System.out.print("tamanho : " + arquivo.tamanho + "bytes\n");
+                    System.out.print("tamanho : " + arquivo.tamanho + " bytes\n");
                     //System.out.print("Status : ");
                 }
                 System.out.print("------------------------\n");
@@ -94,7 +94,49 @@ public class MenuArquivo
 
     private void arquivosCompartilhadosComigo(Scanner scan, Connection connection) 
     {
-        // aqui o cara seleciona as coisas
+        ArrayList<Arquivo> arquivos = new ArrayList<>();
+        Arquivo arquivo;
+        arquivos = arquivoQuery(connection, 2);
+        int retorno; int menu = 10;
+
+        do
+        {
+            if (arquivos.size() == 0) 
+            { 
+                System.out.print("\n\n------------------------\n Atualmente, nao tem nenhum arquivo compartilhado com voce!");
+                scan.nextLine();
+                System.out.print("\n\nAperte Enter para voltar. ");
+                scan.nextLine();
+                return;
+            }
+
+            for (int i = 0; i < arquivos.size(); i++)
+                {
+                    arquivo = arquivos.get(i);
+                    System.out.print("------------------------\n");
+                    System.out.print("["+(i+1)+"]\n");
+                    System.out.print(arquivo.nome + "." + arquivo.tipo + "\n");
+                    System.out.print("tamanho : " + arquivo.tamanho + " bytes\n");
+                    System.out.print("proprietario : " + arquivo.dono_login + "\n");
+                    System.out.print("------------------------\n");
+                }
+                    System.out.print("\n\n Selecione o arquivo que voce quer ver, ou [0] para voltar.\n\n >>>");
+                    try {menu = scan.nextInt(); } 
+		            catch (InputMismatchException e)
+		            { scan.next(); menu = 10; }
+
+                    if (menu == 0) { return; }
+                    else if (menu > 0 && menu <= arquivos.size()) 
+                    {
+                    arquivo = arquivos.get(menu-1);
+                    retorno = verArquivo(3, arquivo, connection, scan);
+                    if (retorno == 0) { arquivos = arquivoQuery(connection, 2); }
+                    }
+                else { System.out.print("\n Entrada invalida!\n"); menu = 10; }
+
+                
+
+        } while (menu != 0);
     }
 
     private void arquivosInstituicao(Scanner scan, Connection connection) 
@@ -136,6 +178,34 @@ public class MenuArquivo
             }
             catch (SQLException e) { e.printStackTrace(); }
             break;
+
+
+            case 2 : // vendo compartilhados
+            try
+            {
+            String tipo, conteudo, data_alteracao, url, nome, login;
+            Integer tamanho;
+
+            Statement stmt = connection.createStatement();
+            ResultSet result;
+            result = stmt.executeQuery("SELECT conteudo, nome, tipo, data_alteracao, tamanho, url, login FROM (select @echoInt:="+this.user.id+" p) parametro, arquivosCompartilhadosComigo");
+            while (result.next())
+            {
+                conteudo = result.getString("conteudo");
+                nome = result.getString("nome");
+                tipo = result.getString("tipo");
+                data_alteracao = result.getDate("data_alteracao").toString();
+                tamanho = result.getInt("tamanho");
+                url = result.getString("url");
+                login = result.getString("login");
+
+                arquivo = new Arquivo();
+                arquivo.conteudo = conteudo; arquivo.nome = nome; arquivo.tipo = tipo; arquivo.data_alteracao = data_alteracao; arquivo.tamanho = tamanho; arquivo.url = url; arquivo.dono_login = login;
+                arquivos.add(arquivo);
+            }
+            }
+            catch (SQLException e) { e.printStackTrace(); }
+            break;
         }
 
         return arquivos;
@@ -149,11 +219,11 @@ public class MenuArquivo
 
     switch (contexto){ 
 
-        case 1 : // proprio arquivo, privado
+        case 1 : // quando dono do arquivo privado
         do
         {
             System.out.print("-------------------------------\n" + arquivo.nome + "." + arquivo.tipo + "\nTamanho : " + arquivo.tamanho );
-            if (arquivo.url != "0") {System.out.print("\nurl : " + arquivo.url);}
+            if (arquivo.url != null) {System.out.print("\nurl : " + arquivo.url);}
 
             System.out.print("\nPermissoes : Apenas compartilhado\n");
             try { CallableStatement cstmt = connection.prepareCall("{ call getQtdCompartilhamentos(?, ?, ?, ?)}"); 
@@ -205,17 +275,17 @@ public class MenuArquivo
         } while (menu != 0); 
         break;
 
-        case 2 : // proprio arquivo, compartilhado com instituicao
+        case 2 : // quando eh o dono do arquivo compartilhado com a instituicao
         do
         {
             System.out.print("-------------------------------\n" + arquivo.nome + "." + arquivo.tipo + "\nTamanho : " + arquivo.tamanho );
-            if (arquivo.url != "0") {System.out.print("\nurl : " + arquivo.url);}
+            if (arquivo.url != null) {System.out.print("\nurl : " + arquivo.url);}
             
            
             System.out.print("\nPermissoes : Toda instituicao\n");
 
             System.out.print("Conteudo : \n-------------------------------------------------------------\n" + arquivo.conteudo + "\n-------------------------------------------------------------\n");
-            System.out.print("Opcoes :\n [1] - Atualizar arquivo\n [2] - Remover arquivo\n [3] - Ver historico de versao\n [4] - Ver Comentarios\n [0] voltar \n\n >>>");
+            System.out.print("Opcoes :\n [1] - Atualizar arquivo\n [2] - Ver historico de versao\n [3] - Ver Comentarios\n [321] - Remover Arquivo\n [0] voltar \n\n >>>");
             try {menu = scan.nextInt(); } 
 		    catch (InputMismatchException e)
 		    { scan.next(); menu = 10; }
@@ -240,6 +310,40 @@ public class MenuArquivo
             }
 
         } while (menu != 0); 
+        break;
+
+        case 3 :  // vendo arquivos compartilhado com o usuario
+        do
+        {
+            System.out.print("-------------------------------\n" + arquivo.nome + "." + arquivo.tipo + "\nTamanho : " + arquivo.tamanho );
+            if (arquivo.url != "0") {System.out.print("\nurl : " + arquivo.url);}
+            System.out.print("\nNome do dono : " + arquivo.dono_login + "\n");
+            System.out.print("Conteudo : \n-------------------------------------------------------------\n" + arquivo.conteudo + "\n-------------------------------------------------------------\n");
+            System.out.print("Opcoes :\n [1] - Atualizar arquivo\n [2] - Ver historico de versao\n [3] - Ver Comentarios\n [0] voltar \n\n >>>");
+            try {menu = scan.nextInt(); } 
+		    catch (InputMismatchException e)
+		    { scan.next(); menu = 10; }
+
+            switch (menu)
+            {
+                case 1: retorno = atualizarArquivo(scan, connection, arquivo); 
+                break;
+
+                case 2:
+                break;
+
+                case 3:
+                break;
+
+                case 0:
+                break;
+
+                default: System.out.print("\n Entrada invalida!\n"); menu = 10; break;
+            }
+
+        
+        } while (menu != 0);
+
         break;
 
         }
@@ -295,7 +399,7 @@ public class MenuArquivo
             prep.executeBatch();
         }
         catch(SQLException e){
-            e.printStackTrace();
+            e.printStackTrace(); 
         }
     }
 
@@ -343,6 +447,8 @@ public class MenuArquivo
         String data_alteracao;
         Integer tamanho; 
         String url;
+
+        String dono_login;
 
         // "select a.conteudo, a.tipo, a.permissoes, a.data_alteracao, a.tamanho, a.url FROM Arquivo a LEFT JOIN Usuario u on (a.id_dono = u.id) where id_dono = echoInt(); "
 
