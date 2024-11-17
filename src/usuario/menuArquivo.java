@@ -42,29 +42,8 @@ public class MenuArquivo
         ArrayList<Arquivo> arquivos = new ArrayList<>();
         Arquivo arquivo;
 
-        try
-        {
-            String tipo, conteudo, data_alteracao, url, nome;
-            int permissoes;
-            Integer tamanho;
 
-            Statement stmt = connection.createStatement();
-            ResultSet result;
-            result = stmt.executeQuery("SELECT conteudo, nome, tipo, permissoes, data_alteracao, tamanho, url FROM (select @echoInt:="+this.user.id+" p) parametro, verMeusArquivos");
-            while (result.next())
-            {
-                conteudo = result.getString("conteudo");
-                nome = result.getString("nome");
-                tipo = result.getString("tipo");
-                permissoes = result.getInt("permissoes");
-                data_alteracao = result.getDate("data_alteracao").toString();
-                tamanho = result.getInt("tamanho");
-                url = result.getString("url");
-
-                arquivo = new Arquivo();
-                arquivo.conteudo = conteudo; arquivo.nome = nome; arquivo.tipo = tipo; arquivo.permissoes = permissoes; arquivo.data_alteracao = data_alteracao; arquivo.tamanho = tamanho; arquivo.url = url;
-                arquivos.add(arquivo);
-            }
+        arquivos = arquivoQuery(connection, 1);
 
             if (arquivos.size() == 0) 
             { 
@@ -75,6 +54,7 @@ public class MenuArquivo
                 return;
             }
 
+            int retorno;
             int menu = 10;
 
             do
@@ -100,14 +80,16 @@ public class MenuArquivo
                 if (menu == 0) { return; }
                 else if (menu > 0 && menu <= arquivos.size()) 
                 {
-                    // menu do arquivo
+                    arquivo = arquivos.get(menu-1);
+                    if (arquivo.permissoes == 0) { retorno = verArquivo(1, arquivo, connection, scan); }
+                    else { retorno = verArquivo(2, arquivo, connection, scan); }
+                    if (retorno == 0) { arquivos = arquivoQuery(connection, menu); }
                 }
                 else { System.out.print("\n Entrada invalida!\n"); menu = 10; }
 
 
             } while (menu != 0);
 
-        }   catch (SQLException e) { e.printStackTrace(); }
     }
 
     private void arquivosCompartilhadosComigo(Scanner scan, Connection connection) 
@@ -118,6 +100,84 @@ public class MenuArquivo
     private void arquivosInstituicao(Scanner scan, Connection connection) 
     {
         // aqui o cara seleciona as coisas
+    }
+
+    private ArrayList<Arquivo> arquivoQuery(Connection connection, int contexto)
+    {
+        ArrayList<Arquivo> arquivos = new ArrayList<>();
+        Arquivo arquivo;
+
+        switch (contexto)
+        {
+            case 1 :
+            try
+            {
+            String tipo, conteudo, data_alteracao, url, nome;
+            int permissoes;
+            Integer tamanho;
+
+            Statement stmt = connection.createStatement();
+            ResultSet result;
+            result = stmt.executeQuery("SELECT conteudo, nome, tipo, permissoes, data_alteracao, tamanho, url FROM (select @echoInt:="+this.user.id+" p) parametro, verMeusArquivos");
+            while (result.next())
+            {
+                conteudo = result.getString("conteudo");
+                nome = result.getString("nome");
+                tipo = result.getString("tipo");
+                permissoes = result.getInt("permissoes");
+                data_alteracao = result.getDate("data_alteracao").toString();
+                tamanho = result.getInt("tamanho");
+                url = result.getString("url");
+
+                arquivo = new Arquivo();
+                arquivo.conteudo = conteudo; arquivo.nome = nome; arquivo.tipo = tipo; arquivo.permissoes = permissoes; arquivo.data_alteracao = data_alteracao; arquivo.tamanho = tamanho; arquivo.url = url;
+                arquivos.add(arquivo);
+            }
+            }
+            catch (SQLException e) { e.printStackTrace(); }
+            break;
+        }
+
+        return arquivos;
+    }
+
+    private int verArquivo(int contexto, Arquivo arquivo, Connection connection, Scanner scan)
+    {
+        int menu = 10;
+        String input;
+
+    switch (contexto){ 
+
+        case 1 : // proprio arquivo, privado
+        do
+        {
+            System.out.print("-------------------------------\n" + arquivo.nome + "." + arquivo.tipo + "\nTamanho : " + arquivo.tamanho );
+            if (arquivo.url != "0") {System.out.print("\nurl : " + arquivo.url);}
+            if (arquivo.permissoes == 0) {System.out.print("\nPermissoes : Apenas compartilhado\n");} else {System.out.print("\nPermissoes : Toda instituicao\n\n");}
+            System.out.print("Conteudo : \n-------------------------------------------------------------\n" + arquivo.conteudo + "\n-------------------------------------------------------------\n");
+            System.out.print("Opcoes :\n [1] - Compartilhar arquivo\n [2] - Atualizar arquivo\n [3] - Remover arquivo\n [4] - Lista de usuarios compartilhados\n [5] - Ver historico de versao\n [6] - remover todos os compartilhamentos \n\n >>>");
+            try {menu = scan.nextInt(); } 
+		    catch (InputMismatchException e)
+		    { scan.next(); menu = 10; }
+
+            switch (menu)
+            {
+                case 1: System.out.print("Digite o login do usuario com que voce quer compartilhar o arquivo :\n >>>");
+                scan.nextLine();
+                input = scan.nextLine();
+                try
+                {
+                    Statement stmt = connection.createStatement();
+                    stmt.execute("call compartilharArquivo(" + this.user.id +", '" + arquivo.tipo + "', '"+ arquivo.nome + "', '"+ input + "');");
+                    System.out.print("\n Arquivo compartilhado com sucesso!");
+                } catch (SQLException e) { e.printStackTrace(); }
+            }
+
+        } while (menu != 0); 
+        break;
+
+        }
+        return 1;
     }
 
 
@@ -174,6 +234,8 @@ public class MenuArquivo
     }
 
 
+    
+
 
 
     private class Arquivo
@@ -191,4 +253,3 @@ public class MenuArquivo
     }
 
 }
-
