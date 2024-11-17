@@ -193,6 +193,42 @@ static boolean resetarDatabase(Connection connection)
         "end if; "+
         "END"
     );
+	    (
+        "CREATE DEFINER=`root`@`localhost` PROCEDURE IF NOT EXISTS compartilharArquivo" +
+        " (IN ownerID INT, IN tipoConfirm VARCHAR(100), IN nomeConfirm VARCHAR(100), IN targetlogin VARCHAR(100))"+
+        "BEGIN " +
+        "DECLARE checkOwner INT; " +
+        "DECLARE checkTarget INT; " +
+        "DECLARE checkRepeated INT; " +
+        "DECLARE id_arq INT; " +
+        "DECLARE id_target INT; " +
+        "SET checkOwner = (SELECT EXISTS (SELECT * FROM Arquivo a LEFT JOIN Usuario u on (a.id_dono = u.id) WHERE (id_dono = ownerID) ) AS result); " +
+
+        "if checkOwner = 0 then " +
+        "signal sqlstate '45000' set message_text = 'Erro : Nao e dono do arquivo!'; " +
+        "end if; " +
+        "if checkOwner = 1 then " +
+        "SET id_arq = (SELECT id from Arquivo WHERE (id_dono = ownerID) AND (nome = nomeConfirm) AND (tipo = tipoConfirm)); " +
+
+        "SET checkTarget = (SELECT EXISTS (SELECT * from Usuario where (login = targetlogin)) as result); " +
+        "if checkTarget = 0 then " +
+        "signal sqlstate '45000' set message_text = 'Erro : Usuario com qual compartilhar nao existe!'; " +
+        "end if; " +
+        "if checkTarget = 1 then " +
+        "SET id_target = (SELECT id from Usuario WHERE (login = targetlogin)); " + // clear
+
+        "SET checkRepeated = (SELECT EXISTS (SELECT * FROM Compartilhamento WHERE (id_usuario_compartilhado = id_target) AND (id_arquivo = id_arq)) AS result); " +
+        "if checkRepeated = 1 then " +
+        "signal sqlstate '45000' set message_text = 'Erro : Compartilho com o usuario ja foi feito!'; " +
+        "end if; " +
+        "if checkRepeated = 0 then " +
+        "INSERT INTO Compartilhamento (id_dono, id_arquivo, id_usuario_compartilhado, data) VALUES (ownerID, id_arq, id_target, CURDATE() ); " +
+        "end if; " +
+        "end if; " +
+        "end if; " +
+        "END"
+
+    );
 
     }
 
