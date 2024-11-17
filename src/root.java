@@ -183,6 +183,16 @@ static boolean resetarDatabase(Connection connection)
     );
     stmt.execute("GRANT SELECT on webdriver.verMeusArquivos to usuario;");
 
+    stmt.execute
+    (
+        "CREATE DEFINER=`root`@`localhost` TRIGGER IF NOT EXISTS safe_security "+
+        "BEFORE INSERT ON Arquivo FOR EACH ROW " +
+        "BEGIN " +
+        "if new.tipo = 'exe' then " +
+        "signal sqlstate '45000' set message_text = 'Erro : Arquivos executaveis nao podem ser inseridos!'; " +
+        "end if; "+
+        "END"
+    );
 
     }
 
