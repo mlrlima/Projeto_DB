@@ -195,6 +195,7 @@ static boolean resetarDatabase(Connection connection)
         "END"
     );
 
+
     stmt.execute("CREATE DEFINER=`root`@`localhost` PROCEDURE IF NOT EXISTS getArqID" +
     "(IN thisid INT, IN nomeConfirm VARCHAR(100), IN tipoConfirm VARCHAR(100), OUT result INT ) " +
     "BEGIN " +
@@ -217,10 +218,26 @@ static boolean resetarDatabase(Connection connection)
     "END"
     );
 
+    stmt.execute("CREATE DEFINER=`root`@`localhost` PROCEDURE IF NOT EXISTS hostOnlyArqID" +
+    "(IN thisid INT, IN nomeConfirm VARCHAR(100), IN tipoConfirm VARCHAR(100), OUT result INT ) " +
+    "BEGIN " +
+    "DECLARE checkPerm INT; " +
+    "SET checkPerm = ( SELECT EXISTS ( SELECT * FROM Arquivo a LEFT JOIN Usuario u on (a.id_dono = u.id) WHERE (id_dono = thisid) AND (tipo = tipoConfirm) AND (nome = nomeConfirm) ) AS result); " +
+    "if checkPerm = 1 then " +
+    "SET result = ( SELECT a.id FROM Arquivo a LEFT JOIN Usuario u on (a.id_dono = u.id) WHERE  (id_dono = thisid) AND (tipo = tipoConfirm) AND (nome = nomeConfirm)); " +
+    "end if; " +
+
+    "if checkPerm = 0 then " +
+    "signal sqlstate '45000' set message_text = 'Erro : Nao e o dono do arquivo arquivo!'; SET result = checkPerm; " +
+    "end if; " +
+    
+    "END"
+    );
+
     stmt.execute("CREATE DEFINER=`root`@`localhost` PROCEDURE IF NOT EXISTS getQtdCompartilhamentos" +
    "(IN ownerid INT, in nomeConfirm VARCHAR(100), IN tipoConfirm VARCHAR(100), OUT result INT) " +
    "BEGIN " +
-   "CALL getArqID(ownerid, nomeConfirm, tipoConfirm, @arqID); " +
+   "CALL hostOnlyArqID(ownerid, nomeConfirm, tipoConfirm, @arqID); " +
    "SET result = ( SELECT COUNT (@arqID) FROM Compartilhamento ); " +
    "END"
    );
@@ -230,11 +247,21 @@ static boolean resetarDatabase(Connection connection)
    stmt.execute("CREATE DEFINER=`root`@`localhost` PROCEDURE IF NOT EXISTS Remover_Acessos" +
    "(IN ownerid INT, in nomeConfirm VARCHAR(100), IN tipoConfirm VARCHAR(100)) " +
    "BEGIN " +
-   "CALL getArqID(ownerid, nomeConfirm, tipoConfirm, @arqID); " +
+   "CALL hostOnlyArqID(ownerid, nomeConfirm, tipoConfirm, @hostOnlyArqID); " +
    "DELETE FROM Compartilhamento WHERE (id = @arqID); " +
    "END"
    );
    stmt.execute("GRANT EXECUTE ON PROCEDURE webdriver.Remover_Acessos to usuario;");
+
+
+   stmt.execute("CREATE DEFINER=`root`@`localhost` PROCEDURE IF NOT EXISTS Remover_Arquivo" +
+   "(IN ownerid INT, in nomeConfirm VARCHAR(100), IN tipoConfirm VARCHAR(100)) " +
+   "BEGIN " +
+   "CALL hostOnlyArqID(ownerid, nomeConfirm, tipoConfirm, @arqID); " +
+   "DELETE FROM Arquivo WHERE (id_arquivo = @arqID); " +
+   "END"
+   );
+   stmt.execute("GRANT EXECUTE ON PROCEDURE webdriver.Remover_Arquivo to usuario;");
 
 
 
