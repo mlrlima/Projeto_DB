@@ -41,11 +41,15 @@ public class MenuArquivo
     {
         ArrayList<Arquivo> arquivos = new ArrayList<>();
         Arquivo arquivo;
-
-
         arquivos = arquivoQuery(connection, 1);
 
-            if (arquivos.size() == 0) 
+
+            int retorno;
+            int menu = 10;
+
+            do
+            {
+                if (arquivos.size() == 0) 
             { 
                 System.out.print("\n\n------------------------\n Atualmente, voce nao e dono de nenhum arquivo!");
                 scan.nextLine();
@@ -54,11 +58,6 @@ public class MenuArquivo
                 return;
             }
 
-            int retorno;
-            int menu = 10;
-
-            do
-            {
                 for (int i = 0; i < arquivos.size(); i++ )
                 {
                     arquivo = arquivos.get(i);
@@ -109,7 +108,7 @@ public class MenuArquivo
 
         switch (contexto)
         {
-            case 1 :
+            case 1 : // dono do arquivo
             try
             {
             String tipo, conteudo, data_alteracao, url, nome;
@@ -153,24 +152,92 @@ public class MenuArquivo
         {
             System.out.print("-------------------------------\n" + arquivo.nome + "." + arquivo.tipo + "\nTamanho : " + arquivo.tamanho );
             if (arquivo.url != "0") {System.out.print("\nurl : " + arquivo.url);}
-            if (arquivo.permissoes == 0) {System.out.print("\nPermissoes : Apenas compartilhado\n");} else {System.out.print("\nPermissoes : Toda instituicao\n\n");}
+
+            System.out.print("\nPermissoes : Apenas compartilhado\n");
+            try { CallableStatement cstmt = connection.prepareCall("{ call getQtdCompartilhamentos(?, ?, ?, ?)}"); 
+                 cstmt.setInt(1, this.user.id);
+                 cstmt.setString(2, arquivo.nome);
+                 cstmt.setString(3, arquivo.tipo);
+                 cstmt.registerOutParameter(4, Types.INTEGER);
+                            //                                         call getQtdCompartilhamentos(1, 'teste', 'bin', @result);
+                cstmt.execute();
+                System.out.print("Quantidade de compartilhamentos : " + cstmt.getInt(4) + "\n\n");
+
+                } 
+                 catch (SQLException e) { e.printStackTrace(); }
+
             System.out.print("Conteudo : \n-------------------------------------------------------------\n" + arquivo.conteudo + "\n-------------------------------------------------------------\n");
-            System.out.print("Opcoes :\n [1] - Compartilhar arquivo\n [2] - Atualizar arquivo\n [3] - Remover arquivo\n [4] - Lista de usuarios compartilhados\n [5] - Ver historico de versao\n [6] - remover todos os compartilhamentos \n\n >>>");
+            System.out.print("Opcoes :\n [1] - Compartilhar arquivo\n [2] - Atualizar arquivo\n [3] - Ver historico de versao\n [4] - Ver comentarios\n [123] - remover todos os compartilhamentos\n [321] - remover arquivo\n [0] voltar \n\n >>>");
             try {menu = scan.nextInt(); } 
 		    catch (InputMismatchException e)
 		    { scan.next(); menu = 10; }
 
             switch (menu)
             {
-                case 1: System.out.print("Digite o login do usuario com que voce quer compartilhar o arquivo :\n >>>");
-                scan.nextLine();
-                input = scan.nextLine();
+                case 1: 
+                    System.out.print("Digite o login do usuario com que voce quer compartilhar o arquivo :\n >>>");
+                    scan.nextLine();
+                    input = scan.nextLine();
+                    try
+                    {
+                        Statement stmt = connection.createStatement();
+                        stmt.execute("call compartilharArquivo(" + this.user.id +", '" + arquivo.tipo + "', '"+ arquivo.nome + "', '"+ input + "');");
+                        System.out.print("\n Arquivo compartilhado com sucesso!\n");
+                    } catch (SQLException e) { e.printStackTrace(); }
+                    break;
+
+                case 123:
+                    try
+                    {
+                        Statement stmt = connection.createStatement();
+                        stmt.execute("call Remover_Acessos(" + this.user.id +", '" + arquivo.nome + "', '"+ arquivo.tipo + "');");
+                        System.out.print("\n Compartilhamentos removidos com sucesso!\n");
+                    } catch (SQLException e) { e.printStackTrace(); }
+                    break;
+
+                case 321:
                 try
-                {
-                    Statement stmt = connection.createStatement();
-                    stmt.execute("call compartilharArquivo(" + this.user.id +", '" + arquivo.tipo + "', '"+ arquivo.nome + "', '"+ input + "');");
-                    System.out.print("\n Arquivo compartilhado com sucesso!");
-                } catch (SQLException e) { e.printStackTrace(); }
+                    {
+                        Statement stmt = connection.createStatement();
+                        stmt.execute("call Remover_Arquivo(" + this.user.id +", '" + arquivo.nome + "', '"+ arquivo.tipo + "');");
+                        System.out.print("\n Arquivo removido com sucesso!\n"); return 0;
+                    } catch (SQLException e) { e.printStackTrace(); }
+                    break;
+
+
+                case 0 : break;
+
+                default: System.out.print("\n Entrada invalida!\n"); menu = 10; break;
+            }
+
+        } while (menu != 0); 
+        break;
+
+        case 2 : // proprio arquivo, compartilhado com instituicao
+        do
+        {
+            System.out.print("-------------------------------\n" + arquivo.nome + "." + arquivo.tipo + "\nTamanho : " + arquivo.tamanho );
+            if (arquivo.url != "0") {System.out.print("\nurl : " + arquivo.url);}
+            
+           
+            System.out.print("\nPermissoes : Toda instituicao\n");
+
+            System.out.print("Conteudo : \n-------------------------------------------------------------\n" + arquivo.conteudo + "\n-------------------------------------------------------------\n");
+            System.out.print("Opcoes :\n [1] - Atualizar arquivo\n [2] - Remover arquivo\n [3] - Ver historico de versao\n [4] - Ver Comentarios\n [0] voltar \n\n >>>");
+            try {menu = scan.nextInt(); } 
+		    catch (InputMismatchException e)
+		    { scan.next(); menu = 10; }
+
+            switch (menu)
+            {
+                case 1: 
+                break;
+
+                case 0:
+                break;
+
+                default: System.out.print("\n Entrada invalida!\n"); menu = 10; break;
+
             }
 
         } while (menu != 0); 
