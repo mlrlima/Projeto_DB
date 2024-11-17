@@ -30,6 +30,7 @@ public class MenuArquivo
                 case 1 :  criarArquivo(scan, connection); break;
                 case 2 :  meusArquivos(scan, connection); break;
                 case 3 :  break;
+                case 4 :  break;
                 case 0 :  break;
                 default: System.out.print("\n Entrada invalida!\n"); menu = 10; break;
             }
@@ -82,6 +83,7 @@ public class MenuArquivo
                     arquivo = arquivos.get(menu-1);
                     if (arquivo.permissoes == 0) { retorno = verArquivo(1, arquivo, connection, scan); }
                     else { retorno = verArquivo(2, arquivo, connection, scan); }
+
                     if (retorno == 0) { arquivos = arquivoQuery(connection, menu); }
                 }
                 else { System.out.print("\n Entrada invalida!\n"); menu = 10; }
@@ -144,6 +146,7 @@ public class MenuArquivo
     {
         int menu = 10;
         String input;
+        int retorno = 1; // 1 -> nao precisa atualizar lista de arquivos, 0 -> mudou algo
 
     switch (contexto){ 
 
@@ -185,6 +188,22 @@ public class MenuArquivo
                         System.out.print("\n Arquivo compartilhado com sucesso!\n");
                     } catch (SQLException e) { e.printStackTrace(); }
                     break;
+
+                case 2:
+                    System.out.print("Insira o novo conteudo do arquivo :\n >>>");
+                    scan.nextLine();
+                    input = scan.nextLine();
+                    try
+                    {
+                        Statement stmt = connection.createStatement();
+                        stmt.execute("call Atualizar_Arquivo(" + this.user.id +", '" + arquivo.nome + "', '"+ arquivo.tipo + "', '"+ input + "');");
+                        System.out.print("\n Arquivo atualizado com sucesso!\n");
+                        arquivo.conteudo = input;
+                        retorno = 0;
+                    } catch (SQLException e) { e.printStackTrace(); }
+                    break;
+
+
 
                 case 123:
                     try
@@ -244,7 +263,7 @@ public class MenuArquivo
         break;
 
         }
-        return 1;
+        return retorno;
     }
 
 
@@ -320,3 +339,4 @@ public class MenuArquivo
     }
 
 }
+
