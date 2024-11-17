@@ -139,7 +139,7 @@ static boolean resetarDatabase(Connection connection)
         stmt.execute("DROP ROLE IF EXISTS usuario;"); // usuarios e roles ficam fora da db
         stmt.execute("flush privileges;");
         stmt.execute("CREATE ROLE usuario;");
-        stmt.execute("GRANT INSERT, UPDATE, DELETE on webdriver.Arquivo to usuario;");
+        stmt.execute("GRANT INSERT on webdriver.Arquivo to usuario;");
         //stmt.execute("GRANT INSERT, UPDATE, DELETE on webdriver.Compartilhamento to usuario;");
         stmt.execute("GRANT INSERT, UPDATE, DELETE on webdriver.Suporte to usuario;");
         stmt.execute("GRANT INSERT, UPDATE, DELETE on webdriver.Comentario to usuario;");
@@ -262,6 +262,16 @@ static boolean resetarDatabase(Connection connection)
    "END"
    );
    stmt.execute("GRANT EXECUTE ON PROCEDURE webdriver.Remover_Arquivo to usuario;");
+
+
+   stmt.execute("CREATE DEFINER=`root`@`localhost` PROCEDURE IF NOT EXISTS Atualizar_Arquivo" +
+   "(IN userid INT, in nomeConfirm VARCHAR(100), IN tipoConfirm VARCHAR(100), IN novoConteudo TEXT) " +
+   "BEGIN " +
+   "CALL getArqID(userid, nomeConfirm, tipoConfirm, @arqID); " +
+   "UPDATE Arquivo SET conteudo = novoConteudo, data_alteracao = CURDATE() WHERE (id = @arqID); " +
+   "END"
+   );
+   stmt.execute("GRANT EXECUTE ON PROCEDURE webdriver.Atualizar_Arquivo to usuario;");
 
 
 
