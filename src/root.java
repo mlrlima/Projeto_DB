@@ -184,6 +184,15 @@ static boolean resetarDatabase(Connection connection)
     );
     stmt.execute("GRANT SELECT on webdriver.verMeusArquivos to usuario;");
 
+    stmt.execute("DROP VIEW IF EXISTS arquivosCompartilhadosComigo");
+    stmt.execute("CREATE SQL SECURITY DEFINER VIEW arquivosCompartilhadosComigo AS  "+
+    "select a.conteudo, a.nome, a.tipo, a.data_alteracao, a.tamanho, a.url, u.login FROM Arquivo a LEFT JOIN Usuario u on (u.id = a.id_dono) LEFT JOIN Compartilhamento c on (a.id = c.id_arquivo) where id_usuario_compartilhado = echoInt(); "
+    );
+    stmt.execute("GRANT SELECT on webdriver.arquivosCompartilhadosComigo to usuario;");
+
+
+    /// procedures
+
     stmt.execute
     (
         "CREATE DEFINER=`root`@`localhost` TRIGGER IF NOT EXISTS safe_security "+
@@ -207,13 +216,14 @@ static boolean resetarDatabase(Connection connection)
     "end if; " +
 
     "if checkPerm = 0 then " + 
-    "SET checkPerm = ( SELECT EXISTS ( SELECT * from Arquivo a LEFT JOIN Compartilhamento c on (a.id_dono = c.id_dono) WHERE (tipo = tipoConfirm) AND (nome = nomeConfirm) AND (id_usuario_compartilhado = thisid)  ) AS result); " +
+    "SET checkPerm = ( SELECT EXISTS ( SELECT a.id from Arquivo a INNER JOIN Compartilhamento c on (a.id = c.id_arquivo) AND (a.id_dono = c.id_dono) WHERE (a.nome = nomeConfirm) AND (a.tipo = tipoConfirm) ) AS result); " +
     "end if; " +
     "if checkPerm = 0 then " +
     "signal sqlstate '45000' set message_text = 'Erro : Nao tem permissao pra ver o arquivo!'; SET result = checkPerm; " +
     "end if; " +
     "if checkPerm = 1 then " +
-    "SET result = (SELECT a.id from Arquivo a LEFT JOIN Compartilhamento c on (a.id_dono = c.id_dono) WHERE (tipo = tipoConfirm) AND (nome = nomeConfirm) AND (id_usuario_compartilhado = thisid) ); " +
+    "SET result = (SELECT a.id from Arquivo a INNER JOIN Compartilhamento c on (a.id = c.id_arquivo) AND (a.id_dono = c.id_dono) WHERE (a.nome = nomeConfirm) AND (a.tipo = tipoConfirm) );  " +
+
     "end if; " +
     "END"
     );
@@ -238,7 +248,7 @@ static boolean resetarDatabase(Connection connection)
    "(IN ownerid INT, in nomeConfirm VARCHAR(100), IN tipoConfirm VARCHAR(100), OUT result INT) " +
    "BEGIN " +
    "CALL hostOnlyArqID(ownerid, nomeConfirm, tipoConfirm, @arqID); " +
-   "SET result = ( SELECT COUNT (@arqID) FROM Compartilhamento ); " +
+   "SET result = ( SELECT COUNT(*) FROM Compartilhamento WHERE (id_arquivo = @arqID) ); " +
    "END"
    );
    stmt.execute("GRANT EXECUTE ON PROCEDURE webdriver.getQtdCompartilhamentos to usuario;");
@@ -579,7 +589,7 @@ public static void main(String[] args)
         
     String url = "jdbc:mariadb://localhost:3306";
     String user = "root";
-    String pwd = "dP@&XhfW5e#*SBXvGN#972W66%8";
+    String pwd = "password";
     Connection connection = null;
 
     try 
