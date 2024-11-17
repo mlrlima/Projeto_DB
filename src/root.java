@@ -248,7 +248,7 @@ static boolean resetarDatabase(Connection connection)
    "(IN ownerid INT, in nomeConfirm VARCHAR(100), IN tipoConfirm VARCHAR(100)) " +
    "BEGIN " +
    "CALL hostOnlyArqID(ownerid, nomeConfirm, tipoConfirm, @hostOnlyArqID); " +
-   "DELETE FROM Compartilhamento WHERE (id = @arqID); " +
+   "DELETE FROM Compartilhamento WHERE (id_arquivo = @arqID); " +
    "END"
    );
    stmt.execute("GRANT EXECUTE ON PROCEDURE webdriver.Remover_Acessos to usuario;");
@@ -258,7 +258,7 @@ static boolean resetarDatabase(Connection connection)
    "(IN ownerid INT, in nomeConfirm VARCHAR(100), IN tipoConfirm VARCHAR(100)) " +
    "BEGIN " +
    "CALL hostOnlyArqID(ownerid, nomeConfirm, tipoConfirm, @arqID); " +
-   "DELETE FROM Arquivo WHERE (id_arquivo = @arqID); " +
+   "DELETE FROM Arquivo WHERE (id = @arqID); " +
    "END"
    );
    stmt.execute("GRANT EXECUTE ON PROCEDURE webdriver.Remover_Arquivo to usuario;");
