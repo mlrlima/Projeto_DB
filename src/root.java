@@ -123,13 +123,13 @@ static boolean resetarDatabase(Connection connection)
             );
         stmt.execute("create table Compartilhamento("+
         	"id INT PRIMARY KEY NOT NULL AUTO_INCREMENT," +
-                "id_usuario INT, "+
+                "id_dono INT, "+
                 "id_arquivo INT, "+
                 "id_usuario_compartilhado INT,"+
                 "data DATE,"
-                + "FOREIGN KEY (id_usuario) REFERENCES Usuario(id),"
-                + "FOREIGN KEY (id_arquivo) REFERENCES Arquivo(id),"
-                + "FOREIGN KEY(id_usuario_compartilhado) REFERENCES Usuario(id));"
+                + "FOREIGN KEY (id_dono) REFERENCES Usuario(id) ON DELETE CASCADE,"
+                + "FOREIGN KEY (id_arquivo) REFERENCES Arquivo(id) ON DELETE CASCADE,"
+                + "FOREIGN KEY(id_usuario_compartilhado) REFERENCES Usuario(id) ON DELETE CASCADE);"
             );
 
 
@@ -140,7 +140,7 @@ static boolean resetarDatabase(Connection connection)
         stmt.execute("flush privileges;");
         stmt.execute("CREATE ROLE usuario;");
         stmt.execute("GRANT INSERT, UPDATE, DELETE on webdriver.Arquivo to usuario;");
-        stmt.execute("GRANT INSERT, UPDATE, DELETE on webdriver.Compartilhamento to usuario;");
+        //stmt.execute("GRANT INSERT, UPDATE, DELETE on webdriver.Compartilhamento to usuario;");
         stmt.execute("GRANT INSERT, UPDATE, DELETE on webdriver.Suporte to usuario;");
         stmt.execute("GRANT INSERT, UPDATE, DELETE on webdriver.Comentario to usuario;");
 
@@ -227,6 +227,7 @@ static boolean resetarDatabase(Connection connection)
                 "end if; " +
                 "END"
         );
+        stmt.execute("GRANT EXECUTE ON PROCEDURE webdriver.compartilharArquivo to usuario;");
 
     }
 
