@@ -116,10 +116,10 @@ static boolean resetarDatabase(Connection connection)
                 "conteudo TEXT," +
                 "hora TIME," +
                 "data DATE," +
-                "id_usuario INT,"
+                "id_autor INT,"
                 +"id_arquivo INT,"
-                + "FOREIGN KEY (id_arquivo) REFERENCES Arquivo(id),"
-                + "FOREIGN KEY (id_usuario) REFERENCES Usuario(id) );"
+                + "FOREIGN KEY (id_arquivo) REFERENCES Arquivo(id) ON DELETE CASCADE,"
+                + "FOREIGN KEY (id_autor) REFERENCES Usuario(id) ON DELETE CASCADE);"
             );
         stmt.execute("create table Compartilhamento("+
         	"id INT PRIMARY KEY NOT NULL AUTO_INCREMENT," +
@@ -142,7 +142,7 @@ static boolean resetarDatabase(Connection connection)
         stmt.execute("GRANT INSERT on webdriver.Arquivo to usuario;");
         //stmt.execute("GRANT INSERT, UPDATE, DELETE on webdriver.Compartilhamento to usuario;");
         stmt.execute("GRANT INSERT, UPDATE, DELETE on webdriver.Suporte to usuario;");
-        stmt.execute("GRANT INSERT, UPDATE, DELETE on webdriver.Comentario to usuario;");
+        stmt.execute("GRANT INSERT on webdriver.Comentario to usuario;");
 
         stmt.execute("DROP ROLE IF EXISTS admin;");
         stmt.execute("flush privileges;");
@@ -190,8 +190,10 @@ static boolean resetarDatabase(Connection connection)
     );
     stmt.execute("GRANT SELECT on webdriver.arquivosCompartilhadosComigo to usuario;");
 
-
+///
+/// 
     /// procedures
+    
 
     stmt.execute
     (
@@ -282,6 +284,26 @@ static boolean resetarDatabase(Connection connection)
    "END"
    );
    stmt.execute("GRANT EXECUTE ON PROCEDURE webdriver.Atualizar_Arquivo to usuario;");
+
+   // "INSERT INTO Compartilhamento (id_dono, id_arquivo, id_usuario_compartilhado, data) VALUES (ownerID, id_arq, id_target, CURDATE() ); " +
+
+   stmt.execute("CREATE DEFINER=`root`@`localhost` PROCEDURE IF NOT EXISTS CriarComentario" +
+   "(IN userid INT, in nomeConfirm VARCHAR(100), IN tipoConfirm VARCHAR(100), IN novoComentario TEXT )" +
+   "BEGIN " +
+   "CALL getArqID(userid, nomeConfirm, tipoConfirm, @arqID); " +
+   "INSERT INTO Comentario (conteudo, hora, data, id_autor, id_arquivo) VALUES (novoComentario, CURTIME(), CURDATE(), userid, @arqID); " +
+   "END" 
+   );
+   stmt.execute("GRANT EXECUTE ON PROCEDURE webdriver.CriarComentario to usuario;");
+
+   stmt.execute("CREATE DEFINER=`root`@`localhost` PROCEDURE IF NOT EXISTS verComentarios" +
+   "(IN userid INT, in nomeConfirm VARCHAR(100), IN tipoConfirm VARCHAR(100) ) " +
+   "BEGIN " +   
+   "CALL getArqID(userid, nomeConfirm, tipoConfirm, @arqID); " +
+   "SELECT c.conteudo, c.hora, c.data, u.login FROM Comentario c LEFT JOIN Usuario u on (u.id = c.id_autor) where id_arquivo = @arqID;" +
+   "END"
+   );
+   stmt.execute("GRANT EXECUTE ON PROCEDURE webdriver.verComentarios to usuario;");
 
 
 
