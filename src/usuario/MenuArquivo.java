@@ -288,7 +288,7 @@ public class MenuArquivo
                 case 2: retorno = atualizarArquivo(scan, connection, arquivo); 
                 break; 
 
-                case 4: //verComentarios();
+                case 4: verComentarios(scan, connection, arquivo);
                 break;
 
                 case 123: try
@@ -334,7 +334,7 @@ public class MenuArquivo
                 case 1: retorno = atualizarArquivo(scan, connection, arquivo); 
                 break;
 
-                case 3: //verComentarios();
+                case 3: verComentarios(scan, connection, arquivo);
                 break;
 
                 case 321: try
@@ -374,7 +374,7 @@ public class MenuArquivo
                 case 2:
                 break;
 
-                case 3: //verComentarios();
+                case 3: verComentarios(scan, connection, arquivo);
                 break;
 
                 case 0:
@@ -392,6 +392,42 @@ public class MenuArquivo
         return retorno;
     }
 
+    private void verComentarios(Scanner scan, Connection connection, Arquivo arquivo)
+    {
+        ArrayList<Comentario> comentarios = new ArrayList<>();
+        Comentario comentario;
+        comentarios = comentarioQuery(connection, arquivo);
+
+        int menu = 10;
+        do
+        {
+            if (comentarios.size() == 0)
+            {
+                System.out.print("\n\n------------------------\n Esse arquivo nao tem nenhum comentario!\n");
+            }
+            else 
+            {
+
+            for (int i = 0; i < comentarios.size(); i++ )
+                {
+                    comentario = comentarios.get(i);
+                    System.out.print("\n-------------------------------------------------------------\n");
+                    System.out.print("Escrito por " + comentario.autor_login + " " + comentario.data + " " + comentario.hora);
+                    System.out.print("\n\n" + comentario.conteudo);
+                }
+            }
+            System.out.print("\n-------------------------------------------------------------\n");
+                System.out.print("\n\n [1] Criar comentario\n [0] Voltar\n\n >>>");
+                try {menu = scan.nextInt(); } 
+		        catch (InputMismatchException e)
+		        { scan.next(); menu = 10; }
+
+                if (menu == 0) { return; }
+                else if (menu == 1) { criarComentario(scan, connection, arquivo); comentarios = comentarioQuery(connection, arquivo); }
+                else { System.out.print("\n Entrada invalida!\n"); menu = 10; }
+            
+        } while (menu != 0);
+    }
 
 
 
@@ -517,5 +553,4 @@ public class MenuArquivo
         String autor_login;
 
     }
-    
 }
