@@ -228,6 +228,40 @@ public class Instituicao
         return versoes;
     }
 
+    private ArrayList<Comentario> comentarioQuery(Connection connection, Arquivo arquivo)
+    {
+        ArrayList<Comentario> comentarios = new ArrayList<>();
+        Comentario comentario;
+        String conteudo, data, hora, autor_login;
+        ResultSet result;
+        try
+        {
+
+        CallableStatement cstmt = connection.prepareCall("{ call verComentarios (?, ?, ?)}");
+        cstmt.setString(1, arquivo.dono_login);
+        cstmt.setString(2, arquivo.nome);
+        cstmt.setString(3, arquivo.tipo);
+        cstmt.execute();   
+        
+  
+        result = cstmt.getResultSet();
+        while (result.next())
+        {   
+
+            conteudo = result.getString("conteudo");
+            data = result.getDate("data").toString();
+            hora = result.getTime("hora").toString();
+            autor_login = result.getString("login");
+            comentario = new Comentario();
+            comentario.conteudo = conteudo; comentario.data = data; comentario.hora = hora; comentario.autor_login = autor_login;
+            comentarios.add(comentario);
+            
+        }
+        } catch (SQLException e) { e.printStackTrace(); }
+
+        return comentarios;
+    }
+
     private void verArquivo (Connection connection, Scanner scan, Arquivo arquivo)
     {
         int menu = 10;
@@ -240,7 +274,7 @@ public class Instituicao
         else {  System.out.print("\nPermissoes : Compartilhado com a empresa\n"); }
 
         System.out.print("Conteudo : \n-------------------------------------------------------------\n" + arquivo.conteudo + "\n-------------------------------------------------------------\n");
-        System.out.print("Opcoes :\n [1] - Ver versionamento\n [0] voltar \n\n >>>");
+        System.out.print("Opcoes :\n [1] - Ver versionamento\n [2] - Ver comentarios\n [0] voltar \n\n >>>");
         try {menu = scan.nextInt(); } 
 		catch (InputMismatchException e)
 		{ scan.next(); menu = 10; }
@@ -248,7 +282,8 @@ public class Instituicao
         switch (menu)
         {
             case 0 : break;
-            case 1 : verVersionamento(scan, connection, arquivo);
+            case 1 : verVersionamento(scan, connection, arquivo); break;
+            case 2 : verComentarios(scan, connection, arquivo); break;
         }
 
         } while (menu != 0);
@@ -288,6 +323,37 @@ public class Instituicao
             return;
         } while (menu != 0);
     }
+
+    private void verComentarios(Scanner scan, Connection connection, Arquivo arquivo)
+    {
+        ArrayList<Comentario> comentarios = new ArrayList<>();
+        Comentario comentario;
+        comentarios = comentarioQuery(connection, arquivo);
+
+
+            if (comentarios.size() == 0)
+            {
+                System.out.print("\n\n------------------------\n Esse arquivo nao tem nenhum comentario!\n");
+            }
+            else 
+            {
+
+            for (int i = 0; i < comentarios.size(); i++ )
+                {
+                    comentario = comentarios.get(i);
+                    System.out.print("\n-------------------------------------------------------------\n");
+                    System.out.print("Escrito por " + comentario.autor_login + " " + comentario.data + " " + comentario.hora);
+                    System.out.print("\n\n" + comentario.conteudo);
+                }
+            }
+            System.out.print("\n-------------------------------------------------------------\n");
+            scan.nextLine();
+            System.out.print("\n\nAperte Enter para voltar. ");
+            scan.nextLine();
+            return;
+
+    }
+    
 
     private void verUsuarios (Scanner scan, Connection connection)
     {
@@ -345,5 +411,14 @@ public class Instituicao
         String autor_login;
     }
 
+    private class Comentario
+    {
+        String conteudo;
+        String data;
+        String hora;
+        String autor_login;
+
+    }
 
 }
+
