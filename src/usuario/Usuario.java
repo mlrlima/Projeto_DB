@@ -312,6 +312,7 @@ public class Usuario
         }
 
         int menu = 10;
+        int target;
         do
         {
             System.out.print("\n------------------------\n");
@@ -319,8 +320,8 @@ public class Usuario
             {
                 suporte = suportes.get(i);
                 System.out.print("["+(i+1)+"]\n");
-                System.out.print("Ticket suporte " + suporte.data + " " + suporte.hora +"\n");
-                System.out.print("ID : " + suporte.id + "\n");
+                System.out.print("Ticket suporte " + suporte.data + " " + suporte.hora);
+                System.out.print(" ID : " + suporte.id + "\n\n");
             }
             System.out.print("\n\n Selecione o suporte que voce quer ver, ou [0] para voltar.\n\n >>>");
 
@@ -338,6 +339,7 @@ public class Usuario
 
                 System.out.print("\n-------------------------------\n\n Digite [1] para responder, ou [0] para voltar.\n\n >>>");
                 
+                target = menu;
                 try { menu = scan.nextInt(); } catch ( InputMismatchException e ) { menu = 10; }
                 if (menu == 1) 
                 {
@@ -361,8 +363,8 @@ public class Usuario
                         result.next();
 
                        // stmt.execute("UPDATE Usuario SET login = '" + login + "' WHERE (id = " + id + ");");
-                        stmt.execute("UPDATE Suporte SET id_resposta =" + result.getInt(1) + " WHERE (id = " + suportes.get(menu-1).id + ")");
-                        stmt.execute("UPDATE Suporte SET status = 1 WHERE (id = " + suportes.get(menu-1).id + ")");
+                        stmt.execute("UPDATE Suporte SET id_resposta =" + result.getInt(1) + " WHERE (id = " + suportes.get(target-1).id + ")");
+                        stmt.execute("UPDATE Suporte SET status = 1 WHERE (id = " + suportes.get(target-1).id + ")");
 
                         System.out.print("Suporte atualizado com sucesso :)\n");
                         System.out.print("Aperte enter para continuar.\n");
