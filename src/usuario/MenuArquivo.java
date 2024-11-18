@@ -3,6 +3,7 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.InputMismatchException;
 import java.util.Scanner;
+import java.util.concurrent.Callable;
 
 @SuppressWarnings("unused")
 
@@ -92,6 +93,7 @@ public class MenuArquivo
 
     }
 
+
     private void arquivosCompartilhadosComigo(Scanner scan, Connection connection) 
     {
         ArrayList<Arquivo> arquivos = new ArrayList<>();
@@ -142,6 +144,40 @@ public class MenuArquivo
     private void arquivosInstituicao(Scanner scan, Connection connection) 
     {
         // aqui o cara seleciona as coisas
+    }
+
+    private ArrayList<Comentario> comentarioQuery(Connection connection, Arquivo arquivo)
+    {
+        ArrayList<Comentario> comentarios = new ArrayList<>();
+        Comentario comentario;
+        String conteudo, data, hora, autor_login;
+        ResultSet result;
+        try
+        {
+
+        CallableStatement cstmt = connection.prepareCall("{ call verComentarios (?, ?, ?)}");
+        cstmt.setInt(1, this.user.id);
+        cstmt.setString(2, arquivo.nome);
+        cstmt.setString(3, arquivo.tipo);
+        cstmt.execute();   
+        
+  
+        result = cstmt.getResultSet();
+        while (result.next())
+        {   
+
+            conteudo = result.getString("conteudo");
+            data = result.getDate("data").toString();
+            hora = result.getTime("hora").toString();
+            autor_login = result.getString("login");
+            comentario = new Comentario();
+            comentario.conteudo = conteudo; comentario.data = data; comentario.hora = hora; comentario.autor_login = autor_login;
+            comentarios.add(comentario);
+            
+        }
+        } catch (SQLException e) { e.printStackTrace(); }
+
+        return comentarios;
     }
 
     private ArrayList<Arquivo> arquivoQuery(Connection connection, int contexto)
@@ -252,6 +288,9 @@ public class MenuArquivo
                 case 2: retorno = atualizarArquivo(scan, connection, arquivo); 
                 break; 
 
+                case 4: //verComentarios();
+                break;
+
                 case 123: try
                     {   Statement stmt = connection.createStatement();
                         stmt.execute("call Remover_Acessos(" + this.user.id +", '" + arquivo.nome + "', '"+ arquivo.tipo + "');");
@@ -295,6 +334,9 @@ public class MenuArquivo
                 case 1: retorno = atualizarArquivo(scan, connection, arquivo); 
                 break;
 
+                case 3: //verComentarios();
+                break;
+
                 case 321: try
                     {   Statement stmt = connection.createStatement();
                         stmt.execute("call Remover_Arquivo(" + this.user.id +", '" + arquivo.nome + "', '"+ arquivo.tipo + "');");
@@ -332,7 +374,7 @@ public class MenuArquivo
                 case 2:
                 break;
 
-                case 3:
+                case 3: //verComentarios();
                 break;
 
                 case 0:
@@ -349,6 +391,7 @@ public class MenuArquivo
         }
         return retorno;
     }
+
 
 
 
@@ -433,7 +476,19 @@ public class MenuArquivo
     }
 
 
+    private void criarComentario(Scanner scan, Connection connection, Arquivo arquivo)
+    {
+        System.out.print("Digite a sua mensagem :\n >>>");
+        String input;
+        scan.nextLine();
+        try { input = scan.nextLine(); } catch (InputMismatchException e) { System.out.print("Erro : Entrada invalida!"); return; }
 
+        try{ Statement stmt = connection.createStatement();
+            stmt.execute("call criarComentario(" + this.user.id +", '" + arquivo.nome + "', '"+ arquivo.tipo + "', '"+ input + "');");
+            System.out.print("\n Comentario criado com sucesso!\n");
+          } catch (SQLException e) { e.printStackTrace(); }
+
+    }
     
 
 
@@ -454,4 +509,13 @@ public class MenuArquivo
 
     }
 
+    private class Comentario
+    {
+        String conteudo;
+        String data;
+        String hora;
+        String autor_login;
+
+    }
+    
 }
