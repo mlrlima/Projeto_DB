@@ -275,6 +275,19 @@ static boolean resetarDatabase(Connection connection)
         "END"
     );
 
+    stmt.execute
+    (
+        "CREATE DEFINER=`root`@`localhost` TRIGGER IF NOT EXISTS Usuario_duplicado "+
+        "BEFORE INSERT ON Usuario FOR EACH ROW " +
+        "BEGIN " +
+        "DECLARE checkDuplicado INT; " +
+        "SET checkDuplicado = ( SELECT EXISTS ( select * from Usuario WHERE (login = new.login) ) ); " +
+        "if checkDuplicado = 1 then " +
+        "signal sqlstate '45000' set message_text = 'Erro : Ja existe um usuario com esse login!'; " +
+        "end if; "+
+        "END"
+    );
+
     // SET checkPerm = ( SELECT EXISTS ( SELECT a.id from Arquivo a INNER JOIN Compartilhamento c on (a.id = c.id_arquivo) AND (a.id_dono = c.id_dono) WHERE (a.nome = nomeConfirm) AND (a.tipo = tipoConfirm) ) AS result); " +
 
     stmt.execute
