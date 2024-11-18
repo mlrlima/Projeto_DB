@@ -29,11 +29,13 @@ public class Usuario
         login = login.substring(0, login.length()-10); 
         this.login = login;
         
-        result = stmt.executeQuery("SELECT id, data_ingresso, email, id_admin from (select @echoVarChar:='"+this.login+"' p) parametro, getUserInfo;");
+        result = stmt.executeQuery("SELECT id, data_ingresso, email, id_admin, nome from (select @echoVarChar:='"+this.login+"' p) parametro, getUserInfo;");
         result.next();
         this.id = result.getInt("id");
         this.email = result.getString("email");
         this.data_ingresso = result.getDate("data_ingresso").toString();
+        this.instituicao = result.getString("nome");
+        
 
         if (result.getInt("id_admin") != 0) { Admin admin = new Admin(result.getInt("id_admin")); admin.menu(connection); System.exit(0); }
 
@@ -49,7 +51,7 @@ public class Usuario
         int menu = 10;
         do
         {
-            System.out.print("\n\n------------------------\n O que voce quer fazer agora?\n\n [1] - ver perfil\n [2] - ver arquivos\n [6] - suporte\n [0] - sair\n\n   >>>");
+            System.out.print("\n\n------------------------\n O que voce quer fazer agora?\n\n [1] - ver perfil\n [2] - ver arquivos\n [4] - suporte\n [0] - sair\n\n   >>>");
             try {menu = scan.nextInt(); } 
 		    catch (InputMismatchException e)
 		    { scan.next(); menu = 10; }
@@ -58,7 +60,7 @@ public class Usuario
             {   
                 case 1 : perfil(scan); break;
                 case 2 : MenuArquivo arquivo = new MenuArquivo(this); arquivo.menu(scan, connection); break;
-                case 6 : menuSuporte(scan, connection); break;
+                case 4 : menuSuporte(scan, connection); break;
                 case 0 : System.out.print("\n   :(\n"); break;
                 default: System.out.print("\n Entrada invalida!\n"); menu = 10; break;
             }
@@ -90,11 +92,12 @@ public class Usuario
     private void perfil(Scanner scan)
     {
         scan.nextLine();
-        System.out.print("\n\n(WIP : completar essa pagina depois)\n------------------------ ");
+        System.out.print("\n\n\n------------------------ ");
         System.out.print("\nID : " + this.id);
         System.out.print("\nLogin : " + this.login);
         System.out.print("\nEmail : " + this.email);
         System.out.print("\nData de ingresso : " + this.data_ingresso);
+        if (this.instituicao != null) { System.out.print("\nInstituicao : " + this.instituicao); }
         System.out.print("\n------------------------");
         System.out.print("\n\nAperte Enter para voltar. ");
         scan.nextLine();
