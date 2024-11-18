@@ -132,6 +132,18 @@ static boolean resetarDatabase(Connection connection)
                 + "FOREIGN KEY(id_usuario_compartilhado) REFERENCES Usuario(id) ON DELETE CASCADE);"
             );
 
+        stmt.execute("create table Versionamento("+
+        	"id INT PRIMARY KEY NOT NULL AUTO_INCREMENT," +
+                "conteudo TEXT," +
+                "data DATE," +
+                "hora TIME," +
+                "operacao INT, "+
+                "id_autor INT, "+
+                "id_arquivo INT, "+
+                "FOREIGN KEY (id_autor) REFERENCES Usuario(id) ON DELETE SET NULL, " +
+                "FOREIGN KEY (id_arquivo) REFERENCES Arquivo(id) ON DELETE CASCADE); "
+            );
+
 
 
     //// coisas de pessoas e roles 
@@ -150,7 +162,7 @@ static boolean resetarDatabase(Connection connection)
         stmt.execute("GRANT ALL PRIVILEGES on webdriver.* to admin;");
 
 
-    /// functions e views e procedures e 
+    /// functions
     
     stmt.execute("DROP FUNCTION IF EXISTS echoVarchar");
     stmt.execute
@@ -164,6 +176,7 @@ static boolean resetarDatabase(Connection connection)
     "create function echoInt() returns INT return @echoInt;"
     );
 
+    /// views
     
     stmt.execute("DROP VIEW IF EXISTS getUserInfo");
     stmt.execute("CREATE SQL SECURITY DEFINER VIEW getUserInfo AS  "+
@@ -190,9 +203,15 @@ static boolean resetarDatabase(Connection connection)
     );
     stmt.execute("GRANT SELECT on webdriver.arquivosCompartilhadosComigo to usuario;");
 
-///
-/// 
-    /// procedures
+    //stmt.execute("DROP VIEW IF EXISTS verVersionamento");
+    //stmt.execute("CREATE SQL SECURITY DEFINER VIEW verVersionamento AS  "+
+    //"select v.conteudo, v.data, v.hora, v.operacao, u.login FROM Versionamento v LEFT JOIN Usuario u on(v.id_autor = u.id) where id_arquivo = echoInt()  ; "
+    //);
+    //stmt.execute("GRANT SELECT on webdriver.verVersionamento to usuario;");
+    // portal3
+
+ 
+    /// triggers
     
 
     stmt.execute
@@ -206,6 +225,31 @@ static boolean resetarDatabase(Connection connection)
         "END"
     );
 
+    stmt.execute
+    (
+        "CREATE DEFINER=`root`@`localhost` TRIGGER IF NOT EXISTS versionamento_criacao "+
+        "AFTER INSERT ON Arquivo FOR EACH ROW " +
+        "BEGIN " +
+        "INSERT INTO Versionamento (conteudo, data, hora, operacao, id_autor, id_arquivo) VALUES (new.conteudo, CURDATE(), CURTIME(), 1, new.id_dono, new.id); " +
+        "END"
+    );
+
+    stmt.execute
+    (
+        "CREATE DEFINER=`root`@`localhost` TRIGGER IF NOT EXISTS versionamento_update "+
+        "AFTER UPDATE ON Arquivo FOR EACH ROW " +
+        "BEGIN " +
+        "DECLARE nome VARCHAR(100); " +
+        "DECLARE targetID INT; " +
+        "SET nome = ( USER() ); " +
+        "SET nome = ( LEFT(nome, CHAR_LENGTH(nome) - 10) ); " +
+        "SET targetID = ( SELECT id from Usuario WHERE (login = nome) ); " +
+        "INSERT INTO Versionamento (conteudo, data, hora, operacao, id_autor, id_arquivo) VALUES (new.conteudo, CURDATE(), CURTIME(), 2, targetID, new.id); " +
+        "END"
+    );
+
+
+    /// procedures
 
     stmt.execute("CREATE DEFINER=`root`@`localhost` PROCEDURE IF NOT EXISTS getArqID" +
     "(IN thisid INT, IN nomeConfirm VARCHAR(100), IN tipoConfirm VARCHAR(100), OUT result INT ) " +
@@ -246,6 +290,16 @@ static boolean resetarDatabase(Connection connection)
     "END"
     );
 
+    stmt.execute("CREATE DEFINER=`root`@`localhost` PROCEDURE IF NOT EXISTS anyArqID" +
+    "(IN hostlogin VARCHAR(100), IN nomeConfirm VARCHAR(100), IN tipoConfirm VARCHAR(100), OUT result INT) " +
+    "BEGIN " +
+    "DECLARE hostID INT; " +
+    "SET hostID = ( SELECT u.id FROM Arquivo a LEFT JOIN Usuario u on (a.id_dono = u.id) WHERE (login = hostlogin) AND (tipo = tipoConfirm) and (nome = nomeConfirm) ); " +
+    "SET result = ( SELECT a.id FROM Arquivo a LEFT JOIN Usuario u on (a.id_dono = u.id) WHERE (id_dono = hostID) AND (tipo = tipoConfirm) AND (nome = nomeConfirm) ); " +
+    "END"
+    );
+    // portal1
+
     stmt.execute("CREATE DEFINER=`root`@`localhost` PROCEDURE IF NOT EXISTS getQtdCompartilhamentos" +
    "(IN ownerid INT, in nomeConfirm VARCHAR(100), IN tipoConfirm VARCHAR(100), OUT result INT) " +
    "BEGIN " +
@@ -285,7 +339,6 @@ static boolean resetarDatabase(Connection connection)
    );
    stmt.execute("GRANT EXECUTE ON PROCEDURE webdriver.Atualizar_Arquivo to usuario;");
 
-   // "INSERT INTO Compartilhamento (id_dono, id_arquivo, id_usuario_compartilhado, data) VALUES (ownerID, id_arq, id_target, CURDATE() ); " +
 
    stmt.execute("CREATE DEFINER=`root`@`localhost` PROCEDURE IF NOT EXISTS CriarComentario" +
    "(IN userid INT, in nomeConfirm VARCHAR(100), IN tipoConfirm VARCHAR(100), IN novoComentario TEXT )" +
@@ -304,6 +357,17 @@ static boolean resetarDatabase(Connection connection)
    "END"
    );
    stmt.execute("GRANT EXECUTE ON PROCEDURE webdriver.verComentarios to usuario;");
+
+
+   stmt.execute("CREATE DEFINER=`root`@`localhost` PROCEDURE IF NOT EXISTS verVersionamento" +
+   "(IN hostlogin VARCHAR(100), in nomeConfirm VARCHAR(100), IN tipoConfirm VARCHAR(100) ) " +
+   "BEGIN " +   
+   "CALL anyArqID(hostlogin, nomeConfirm, tipoConfirm, @arqID); " +
+   "SELECT v.conteudo, v.data, v.hora, v.operacao, u.login FROM Versionamento v LEFT JOIN Usuario u on (u.id = v.id_autor) where id_arquivo = @arqID;" +
+   "END"
+   );
+   stmt.execute("GRANT EXECUTE ON PROCEDURE webdriver.verVersionamento to usuario;");
+   // portal 5
 
 
 
@@ -377,7 +441,7 @@ static void criarUsuario(Connection connection, Scanner scan) // conteudo aqui e
     prep.setString(2, email);
     prep.setString(3, senha);
     prep.setDate(4, java.sql.Date.valueOf(result.getString(1)));
-    if (instituicao.equals("0")) { System.out.print("testeteste"); prep.setNull(5, Types.INTEGER); } // else { prep.setString(5, instituicao); }// nao eh string!! e pra ser id!
+    if (instituicao.equals("0")) { prep.setNull(5, Types.INTEGER); } // else { prep.setString(5, instituicao); }// nao eh string!! e pra ser id!
     prep.setNull(6, Types.INTEGER);
     prep.addBatch();
     prep.executeBatch();

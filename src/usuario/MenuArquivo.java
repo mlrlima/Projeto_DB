@@ -180,6 +180,42 @@ public class MenuArquivo
         return comentarios;
     }
 
+    private ArrayList<Versionamento> versaoQuery(Connection connection, Arquivo arquivo)
+    {
+        ArrayList<Versionamento> versoes = new ArrayList<>();
+        Versionamento versao;
+        String conteudo, data, hora, autor_login;
+        int operacao;
+        ResultSet result;
+
+        try
+        {   
+            CallableStatement cstmt = connection.prepareCall("{ call verVersionamento (?, ?, ?)}");
+            cstmt.setString(1, arquivo.dono_login);
+            cstmt.setString(2, arquivo.nome);
+            cstmt.setString(3, arquivo.tipo);
+            cstmt.execute();
+
+            result = cstmt.getResultSet();
+
+
+            while (result.next())
+            {   
+            conteudo = result.getString("conteudo");
+            data = result.getDate("data").toString();
+            hora = result.getTime("hora").toString();
+            autor_login = result.getString("login");
+            operacao = result.getInt("operacao");
+            versao = new Versionamento();
+            versao.conteudo = conteudo; versao.data = data; versao.hora = hora; versao.operacao = operacao; versao.autor_login = autor_login;
+            versoes.add(versao);
+            }
+
+        } catch (SQLException e) { e.printStackTrace(); }
+
+        return versoes;
+    }
+
     private ArrayList<Arquivo> arquivoQuery(Connection connection, int contexto)
     {
         ArrayList<Arquivo> arquivos = new ArrayList<>();
@@ -209,6 +245,7 @@ public class MenuArquivo
 
                 arquivo = new Arquivo();
                 arquivo.conteudo = conteudo; arquivo.nome = nome; arquivo.tipo = tipo; arquivo.permissoes = permissoes; arquivo.data_alteracao = data_alteracao; arquivo.tamanho = tamanho; arquivo.url = url;
+                arquivo.dono_login = this.user.login;
                 arquivos.add(arquivo);
             }
             }
@@ -288,6 +325,9 @@ public class MenuArquivo
                 case 2: retorno = atualizarArquivo(scan, connection, arquivo); 
                 break; 
 
+                case 3: verVersionamento(scan, connection, arquivo);
+                break;
+
                 case 4: verComentarios(scan, connection, arquivo);
                 break;
 
@@ -334,6 +374,9 @@ public class MenuArquivo
                 case 1: retorno = atualizarArquivo(scan, connection, arquivo); 
                 break;
 
+                case 2: verVersionamento(scan, connection, arquivo);
+                break;
+
                 case 3: verComentarios(scan, connection, arquivo);
                 break;
 
@@ -371,7 +414,7 @@ public class MenuArquivo
                 case 1: retorno = atualizarArquivo(scan, connection, arquivo); 
                 break;
 
-                case 2:
+                case 2: verVersionamento(scan, connection, arquivo);
                 break;
 
                 case 3: verComentarios(scan, connection, arquivo);
@@ -426,6 +469,40 @@ public class MenuArquivo
                 else if (menu == 1) { criarComentario(scan, connection, arquivo); comentarios = comentarioQuery(connection, arquivo); }
                 else { System.out.print("\n Entrada invalida!\n"); menu = 10; }
             
+        } while (menu != 0);
+    }
+
+    private void verVersionamento(Scanner scan, Connection connection, Arquivo arquivo)
+    {
+        ArrayList<Versionamento> versoes = new ArrayList<>();
+        Versionamento versao;
+        versoes = versaoQuery(connection, arquivo);
+        int menu = 10;
+
+        do
+        {
+            if (versoes.size() == 0)
+            {
+                System.out.print("\n\n------------------------\n Esse arquivo nao tem nenhuma versao!... Como isso pode acontecer??? Isso nao era pra acontecer!\n");
+            }
+            else
+            {
+                for (int i = versoes.size()-1; i >= 0; i-- )
+                {
+                    versao = versoes.get(i);
+                    System.out.print("\n-------------------------------------------------------------\n");
+                    System.out.print("Versao " + (i+1) + "\n");
+                    if (versao.operacao == 1) { System.out.print("\u001B[32mCriado\u001B[0m por ");} else { System.out.print("\u001B[32mAtualizado\u001B[0m por ");  }
+                    System.out.print("\u001B[33m" + versao.autor_login + "\u001B[0m " + versao.data + " " + versao.hora);
+                    System.out.print("\n\n" + versao.conteudo +"\n");
+                }
+            }
+
+            System.out.print("\n-------------------------------------------------------------\n");
+            scan.nextLine();
+            System.out.print("\n\nAperte Enter para voltar. ");
+            scan.nextLine();
+            return;
         } while (menu != 0);
     }
 
@@ -553,4 +630,14 @@ public class MenuArquivo
         String autor_login;
 
     }
+
+    private class Versionamento
+    {
+        String conteudo;
+        String data;
+        String hora; 
+        int operacao;
+        String autor_login;
+    }
+    
 }
