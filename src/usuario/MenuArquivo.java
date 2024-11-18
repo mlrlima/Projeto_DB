@@ -1,4 +1,4 @@
-package usuario;
+packpackage usuario;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.InputMismatchException;
@@ -21,7 +21,9 @@ public class MenuArquivo
         int menu = 10;
         do
         {
-            System.out.print("\n\n------------------------\n O que voce quer fazer agora?\n\n [1] - criar arquivo\n [2] - meus arquivos\n [3] - ver arquivos compartilhados comigo\n [4] - ver arquivos compartilhados com a instituicao\n [0] - sair\n\n   >>>");
+            System.out.print("\n\n------------------------\n O que voce quer fazer agora?\n\n [1] - criar arquivo\n [2] - meus arquivos\n [3] - ver arquivos compartilhados comigo\n");
+            if (this.user.instituicao != null) {System.out.print(" [4] - ver arquivos compartilhados com a instituicao\n"); } //[4] - ver arquivos compartilhados com a instituicao\n [0] - sair\n\n   >>>");
+            System.out.print(" [0] - sair\n\n   >>>");
             try {menu = scan.nextInt(); } 
 		    catch (InputMismatchException e)
 		    { scan.next(); menu = 10; }
@@ -31,7 +33,7 @@ public class MenuArquivo
                 case 1 :  criarArquivo(scan, connection); break;
                 case 2 :  meusArquivos(scan, connection); break;
                 case 3 :  arquivosCompartilhadosComigo(scan, connection); break;
-                case 4 :  break;
+                case 4 :  if (this.user.instituicao != null) { arquivosInstituicao(scan, connection);} break;
                 case 0 :  break;
                 default: System.out.print("\n Entrada invalida!\n"); menu = 10; break;
             }
@@ -143,8 +145,47 @@ public class MenuArquivo
 
     private void arquivosInstituicao(Scanner scan, Connection connection) 
     {
-        // aqui o cara seleciona as coisas
+        ArrayList<Arquivo> arquivos = new ArrayList<>();
+        Arquivo arquivo;
+        arquivos = arquivoQuery(connection, 3);
+        int menu = 10;
+
+        do
+        {
+            if (arquivos.size() == 0) 
+            { 
+                System.out.print("\n\n------------------------\n Atualmente, nao tem nenhum arquivo compartilhado com voce!");
+                scan.nextLine();
+                System.out.print("\n\nAperte Enter para voltar. ");
+                scan.nextLine();
+                return;
+            }
+            for (int i = 0; i < arquivos.size(); i++)
+                {
+                    arquivo = arquivos.get(i);
+                    System.out.print("------------------------\n");
+                    System.out.print("["+(i+1)+"]\n");
+                    System.out.print(arquivo.nome + "." + arquivo.tipo + "\n");
+                    System.out.print("tamanho : " + arquivo.tamanho + " bytes\n");
+                    System.out.print("proprietario : " + arquivo.dono_login + "\n");
+                    System.out.print("------------------------\n");
+                }
+
+                System.out.print("\n\n Selecione o arquivo que voce quer ver, ou [0] para voltar.\n\n >>>");
+                try {menu = scan.nextInt(); } 
+                catch (InputMismatchException e)
+                { scan.next(); menu = 10; }
+
+                if (menu == 0) { return; }
+                else if (menu > 0 && menu <= arquivos.size()) 
+                {
+                arquivo = arquivos.get(menu-1);
+                verArquivo(4, arquivo, connection, scan);
+                }
+                else { System.out.print("\n Entrada invalida!\n"); menu = 10; }
+        } while (menu != 0);
     }
+    // portal
 
     private ArrayList<Comentario> comentarioQuery(Connection connection, Arquivo arquivo)
     {
@@ -156,7 +197,7 @@ public class MenuArquivo
         {
 
         CallableStatement cstmt = connection.prepareCall("{ call verComentarios (?, ?, ?)}");
-        cstmt.setInt(1, this.user.id);
+        cstmt.setString(1, arquivo.dono_login);
         cstmt.setString(2, arquivo.nome);
         cstmt.setString(3, arquivo.tipo);
         cstmt.execute();   
@@ -253,7 +294,7 @@ public class MenuArquivo
             break;
 
 
-            case 2 : // vendo compartilhados
+            case 2 : // vendo privados compartilhados
             try
             {
             String tipo, conteudo, data_alteracao, url, nome, login;
@@ -277,6 +318,34 @@ public class MenuArquivo
                 arquivos.add(arquivo);
             }
             }
+            catch (SQLException e) { e.printStackTrace(); }
+            break;
+
+            
+            case 3 : // vendo da instituicao
+            try 
+            {
+
+            String tipo, conteudo, data_alteracao, url, nome, login;
+            Integer tamanho;
+            Statement stmt = connection.createStatement();
+            ResultSet result;
+            result = stmt.executeQuery("SELECT conteudo, nome, tipo, data_alteracao, tamanho, url, login FROM (select @echoVarchar:='"+this.user.instituicao+"' p) parametro, arquivosCompartilhadosComInstituicao");
+            while (result.next())
+            {
+                conteudo = result.getString("conteudo");
+                nome = result.getString("nome");
+                tipo = result.getString("tipo");
+                data_alteracao = result.getDate("data_alteracao").toString();
+                tamanho = result.getInt("tamanho");
+                url = result.getString("url");
+                login = result.getString("login");
+
+                arquivo = new Arquivo();
+                arquivo.conteudo = conteudo; arquivo.nome = nome; arquivo.tipo = tipo; arquivo.data_alteracao = data_alteracao; arquivo.tamanho = tamanho; arquivo.url = url; arquivo.dono_login = login;
+                arquivos.add(arquivo);
+            }
+            } 
             catch (SQLException e) { e.printStackTrace(); }
             break;
         }
@@ -429,6 +498,35 @@ public class MenuArquivo
         
         } while (menu != 0);
 
+        case 4 : // vendo arquivos compartilhados com instituicao
+        do
+        {
+            System.out.print("-------------------------------\n" + arquivo.nome + "." + arquivo.tipo + "\nTamanho : " + arquivo.tamanho );
+            if (arquivo.url != "0") {System.out.print("\nurl : " + arquivo.url);}
+            System.out.print("\nNome do dono : " + arquivo.dono_login + "\n");
+            System.out.print("Conteudo : \n-------------------------------------------------------------\n" + arquivo.conteudo + "\n-------------------------------------------------------------\n");
+            System.out.print("Opcoes :\n [1] - Ver historico de versao\n [2] - Ver Comentarios\n [0] voltar \n\n >>>");
+            try {menu = scan.nextInt(); } 
+		    catch (InputMismatchException e)
+		    { scan.next(); menu = 10; }
+
+            switch (menu)
+            {
+
+                case 1: verVersionamento(scan, connection, arquivo);
+                break;
+
+                case 2: verComentarios(scan, connection, arquivo);
+                break;
+
+                case 0:
+                break;
+
+                default: System.out.print("\n Entrada invalida!\n"); menu = 10; break;
+            }
+
+        } while (menu != 0);
+
         break;
 
         }
@@ -519,7 +617,7 @@ public class MenuArquivo
             System.out.print("\nDeseja deixar privado ou compartilhar com a instituição (Digite \"0\" ou \"1\")\n>>> ");
             int perm = scan.nextInt();
             scan.nextLine();
-            System.out.print("\nDigite o nome do conteudo do arquivo:\n>>> ");
+            System.out.print("\nDigite o conteudo do arquivo:\n>>> ");
             String conteudo = scan.nextLine();
             System.out.print("\nDigite o tipo do arquivo:\n >>> ");
             String tipo = scan.nextLine();
@@ -597,7 +695,7 @@ public class MenuArquivo
         try { input = scan.nextLine(); } catch (InputMismatchException e) { System.out.print("Erro : Entrada invalida!"); return; }
 
         try{ Statement stmt = connection.createStatement();
-            stmt.execute("call criarComentario(" + this.user.id +", '" + arquivo.nome + "', '"+ arquivo.tipo + "', '"+ input + "');");
+            stmt.execute("call criarComentario("+this.user.id+", '" + arquivo.dono_login +"', '" + arquivo.nome + "', '"+ arquivo.tipo + "', '"+ input + "');");
             System.out.print("\n Comentario criado com sucesso!\n");
           } catch (SQLException e) { e.printStackTrace(); }
 
