@@ -7,541 +7,581 @@ import java.util.Scanner;
 public class root 
 {
 
-
-static boolean resetarDatabase(Connection connection)
-{
-    Statement stmt;
-    boolean resultado = true;
-    try 
-    {
-        stmt = connection.createStatement();
-
-        stmt.execute("DROP ROLE IF EXISTS admin;");
-        stmt.execute("flush privileges;");
-        stmt.execute("CREATE ROLE admin;");
-
-
-        stmt.execute("DROP DATABASE IF EXISTS webdriver;");
-        stmt.execute("CREATE DATABASE webdriver;");
-        stmt.execute("use webdriver;");
-        
-        stmt.execute
-        (
-        "CREATE TABLE Plano " +
-        "(id INT PRIMARY KEY NOT NULL AUTO_INCREMENT," +
-        "nome TEXT NOT NULL," +
-        "duracao TIME," + 
-        "limite_users INT);"
-        );
-        stmt.execute("GRANT ALL PRIVILEGES on webdriver.Plano to admin;");
-
-        stmt.execute
-        (
-        "CREATE TABLE instituicao" +
-        "(id INT PRIMARY KEY NOT NULL AUTO_INCREMENT," +
-        "nome varchar(100) NOT NULL," +
-        "causa_social TEXT," +
-        "endereco TEXT NOT NULL," +
-        "data_aquisicao DATE NOT NULL," +
-        "plano_id INT NOT NULL," +
-        
-        "CONSTRAINT fk_plano_id " +
-        "FOREIGN KEY (plano_id) REFERENCES Plano(id) ON DELETE RESTRICT ON UPDATE RESTRICT);" 
-        );
-        stmt.execute("GRANT ALL PRIVILEGES on webdriver.instituicao to admin;");
-
-        stmt.execute
-        (
-        "CREATE TABLE Administrador" +
-        "(id INT PRIMARY KEY NOT NULL);" 
-        );
-        stmt.execute("GRANT ALL PRIVILEGES on webdriver.Administrador to admin;");
-
-        stmt.execute(
-        "CREATE TABLE Usuario (" +
-        "id INT PRIMARY KEY NOT NULL AUTO_INCREMENT," +
-        "login VARCHAR(100) NOT NULL," +
-        "email VARCHAR(100) NOT NULL," + 
-        "senha VARCHAR(100) NOT NULL," +
-        "data_ingresso DATE NOT NULL," +
-        "id_instituicao INT," +
-        "id_admin INT," +
-
-        "FOREIGN KEY (id_instituicao) REFERENCES instituicao(id)," +
-        "FOREIGN KEY (id_admin) REFERENCES Administrador(id)" +
-        ");");
-        stmt.execute("GRANT ALL PRIVILEGES on webdriver.Usuario to admin;");
-
-
-        stmt.execute
-        (  
-        "CREATE TABLE Arquivo (" +
-        "id INT PRIMARY KEY NOT NULL AUTO_INCREMENT," +
-        "conteudo TEXT," +
-        "nome VARCHAR(100) NOT NULL," +
-        "tipo VARCHAR(100) NOT NULL," +
-        "permissoes INT," +
-        "data_alteracao DATE," +
-        "tamanho BIGINT UNSIGNED," +
-        "url VARCHAR(100)," +
-        "localizacao VARCHAR(100) NOT NULL," +
-        "id_dono INT," +
+    static boolean resetarDatabase(Connection connection) {
+        Statement stmt;
+        boolean resultado = true;
+        try 
+        {
+            stmt = connection.createStatement();
     
-        "FOREIGN KEY (id_dono) REFERENCES Usuario(id) ON DELETE CASCADE" +");"    
-        ); 
-        stmt.execute("GRANT ALL PRIVILEGES on webdriver.Arquivo to admin;");
-
-        stmt.execute
-        (  
-        "CREATE TABLE Resposta (" +
-        "id_resposta INT PRIMARY KEY NOT NULL AUTO_INCREMENT," +
-        "descricao VARCHAR(100) NOT NULL," +
-        "id_admin INT," +
+            stmt.execute("DROP ROLE IF EXISTS admin;");
+            stmt.execute("flush privileges;");
+            stmt.execute("CREATE ROLE admin;");
+    
+    
+            stmt.execute("DROP DATABASE IF EXISTS webdriver;");
+            stmt.execute("CREATE DATABASE webdriver;");
+            stmt.execute("use webdriver;");
+    
+            stmt.execute
+            (
+            "CREATE TABLE Plano " +
+            "(id INT PRIMARY KEY NOT NULL AUTO_INCREMENT," +
+            "nome VARCHAR(100) NOT NULL," +
+            "duracao DATE," + 
+            "limite_users INT);"
+            );
+            stmt.execute("GRANT ALL PRIVILEGES on webdriver.Plano to admin;");
+    
+            stmt.execute
+            (
+            "CREATE TABLE instituicao" +
+            "(id INT PRIMARY KEY NOT NULL AUTO_INCREMENT," +
+            "nome varchar(100) NOT NULL," +
+            "causa_social TEXT," +
+            "endereco TEXT NOT NULL," +
+            "data_aquisicao DATE NOT NULL," +
+            "plano_id INT NOT NULL," +
+            
+            "CONSTRAINT fk_plano_id " +
+            "FOREIGN KEY (plano_id) REFERENCES Plano(id) ON DELETE CASCADE );" 
+            //"FOREIGN KEY (plano_id) REFERENCES Plano(id) ON DELETE RESTRICT ON UPDATE RESTRICT);" 
+            );
+            stmt.execute("GRANT ALL PRIVILEGES on webdriver.instituicao to admin;");
+    
+            stmt.execute
+            (
+            "CREATE TABLE Administrador" +
+            "(id INT PRIMARY KEY NOT NULL);" 
+            );
+            stmt.execute("GRANT ALL PRIVILEGES on webdriver.Administrador to admin;");
+    
+            stmt.execute(
+            "CREATE TABLE Usuario (" +
+            "id INT PRIMARY KEY NOT NULL AUTO_INCREMENT," +
+            "login VARCHAR(100) NOT NULL," +
+            "email VARCHAR(100) NOT NULL," + 
+            "senha VARCHAR(100) NOT NULL," +
+            "data_ingresso DATE NOT NULL," +
+            "id_instituicao INT," +
+            "id_admin INT," +
+    
+            "FOREIGN KEY (id_instituicao) REFERENCES instituicao(id) ON DELETE RESTRICT," +
+            "FOREIGN KEY (id_admin) REFERENCES Administrador(id)" +
+            ");");
+            stmt.execute("GRANT ALL PRIVILEGES on webdriver.Usuario to admin;");
+    
+    
+            stmt.execute
+            (  
+            "CREATE TABLE Arquivo (" +
+            "id INT PRIMARY KEY NOT NULL AUTO_INCREMENT," +
+            "conteudo TEXT," +
+            "nome VARCHAR(100) NOT NULL," +
+            "tipo VARCHAR(100) NOT NULL," +
+            "permissoes INT," +
+            "data_alteracao DATE," +
+            "tamanho BIGINT UNSIGNED," +
+            "url VARCHAR(100)," +
+            "localizacao VARCHAR(100) NOT NULL," +
+            "id_dono INT," +
         
-        "CONSTRAINT fk_id_admin " +
-        "FOREIGN KEY (id_admin) REFERENCES Administrador(id) ON DELETE CASCADE" + 
-        ");"
-        ); 
-        stmt.execute("GRANT ALL PRIVILEGES on webdriver.Resposta to admin;");
-
-        stmt.execute
-        (
-        "CREATE TABLE Suporte (" +
-        "id INT PRIMARY KEY NOT NULL AUTO_INCREMENT," +
-        "descricao TEXT," +
-        "data DATE," +
-        "hora TIME," +
-        "status INT," +
-        "id_usuario INT," +
-        "id_resposta INT," +
-
-        "FOREIGN KEY (id_usuario) REFERENCES Usuario(id) ON DELETE CASCADE," +
-        "FOREIGN KEY (id_resposta) REFERENCES Resposta(id_resposta) ON DELETE CASCADE" +
-        ");");
-        stmt.execute("GRANT ALL PRIVILEGES on webdriver.Suporte to admin;");
-
-        stmt.execute("create table Comentario("+
+            "FOREIGN KEY (id_dono) REFERENCES Usuario(id) ON DELETE CASCADE" +");"    
+            ); 
+            stmt.execute("GRANT ALL PRIVILEGES on webdriver.Arquivo to admin;");
+    
+            stmt.execute
+            (  
+            "CREATE TABLE Resposta (" +
+            "id_resposta INT PRIMARY KEY NOT NULL AUTO_INCREMENT," +
+            "descricao VARCHAR(100) NOT NULL," +
+            "id_admin INT," +
+            
+            "CONSTRAINT fk_id_admin " +
+            "FOREIGN KEY (id_admin) REFERENCES Administrador(id) ON DELETE CASCADE" + 
+            ");"
+            ); 
+            stmt.execute("GRANT ALL PRIVILEGES on webdriver.Resposta to admin;");
+    
+            stmt.execute
+            (
+            "CREATE TABLE Suporte (" +
+            "id INT PRIMARY KEY NOT NULL AUTO_INCREMENT," +
+            "descricao TEXT," +
+            "data DATE," +
+            "hora TIME," +
+            "status INT," +
+            "id_usuario INT," +
+            "id_resposta INT," +
+    
+            "FOREIGN KEY (id_usuario) REFERENCES Usuario(id) ON DELETE CASCADE," +
+            "FOREIGN KEY (id_resposta) REFERENCES Resposta(id_resposta) ON DELETE CASCADE" +
+            ");");
+            stmt.execute("GRANT ALL PRIVILEGES on webdriver.Suporte to admin;");
+    
+            stmt.execute("create table Comentario("+
+                    "id INT PRIMARY KEY NOT NULL AUTO_INCREMENT," +
+                    "conteudo TEXT," +
+                    "hora TIME," +
+                    "data DATE," +
+                    "id_autor INT,"
+                    +"id_arquivo INT,"
+                    + "FOREIGN KEY (id_arquivo) REFERENCES Arquivo(id) ON DELETE CASCADE,"
+                    + "FOREIGN KEY (id_autor) REFERENCES Usuario(id) ON DELETE CASCADE);"
+                );
+                stmt.execute("GRANT ALL PRIVILEGES on webdriver.Comentario to admin;");
+            
+            stmt.execute("create table Compartilhamento("+
                 "id INT PRIMARY KEY NOT NULL AUTO_INCREMENT," +
-                "conteudo TEXT," +
-                "hora TIME," +
-                "data DATE," +
-                "id_autor INT,"
-                +"id_arquivo INT,"
-                + "FOREIGN KEY (id_arquivo) REFERENCES Arquivo(id) ON DELETE CASCADE,"
-                + "FOREIGN KEY (id_autor) REFERENCES Usuario(id) ON DELETE CASCADE);"
-            );
-            stmt.execute("GRANT ALL PRIVILEGES on webdriver.Comentario to admin;");
+                    "id_dono INT, "+
+                    "id_arquivo INT, "+
+                    "id_usuario_compartilhado INT,"+
+                    "data DATE,"
+                    + "FOREIGN KEY (id_dono) REFERENCES Usuario(id) ON DELETE CASCADE,"
+                    + "FOREIGN KEY (id_arquivo) REFERENCES Arquivo(id) ON DELETE CASCADE,"
+                    + "FOREIGN KEY(id_usuario_compartilhado) REFERENCES Usuario(id) ON DELETE CASCADE);"
+                );
+            stmt.execute("GRANT ALL PRIVILEGES on webdriver.Compartilhamento to admin;");
+    
+            stmt.execute("create table Versionamento("+
+                "id INT PRIMARY KEY NOT NULL AUTO_INCREMENT," +
+                    "conteudo TEXT," +
+                    "data DATE," +
+                    "hora TIME," +
+                    "operacao INT, "+
+                    "id_autor INT, "+
+                    "id_arquivo INT, "+
+                    "FOREIGN KEY (id_autor) REFERENCES Usuario(id) ON DELETE SET NULL, " +
+                    "FOREIGN KEY (id_arquivo) REFERENCES Arquivo(id) ON DELETE CASCADE); "
+                );
+                stmt.execute("GRANT ALL PRIVILEGES on webdriver.Versionamento to admin;");
+    
+                stmt.execute("create table Atividades_recentes("+
+                    "id_arquivo INT," +
+                    "data DATE," +
+                    "acesso TINYINT," +
+                    "FOREIGN KEY (id_arquivo) REFERENCES Arquivo(id) ON DELETE CASCADE); "
+                );
+    
+    
+    
+        //// coisas de pessoas e roles 
+        /// 
+            stmt.execute("DROP ROLE IF EXISTS usuario;"); // usuarios e roles ficam fora da db
+            stmt.execute("DROP ROLE IF EXISTS instituicao;");
+            stmt.execute("flush privileges;");
+            stmt.execute("CREATE ROLE usuario;");
+            stmt.execute("GRANT INSERT on webdriver.Arquivo to usuario;");
+            //stmt.execute("GRANT INSERT, UPDATE, DELETE on webdriver.Compartilhamento to usuario;");
+            //stmt.execute("GRANT INSERT, UPDATE, DELETE on webdriver.Suporte to usuario;");
+            stmt.execute("GRANT INSERT on webdriver.Suporte to usuario;");
+            stmt.execute("GRANT INSERT on webdriver.Comentario to usuario;");
+    
+            stmt.execute("CREATE ROLE instituicao;");
+            stmt.execute("GRANT INSERT on webdriver.Suporte to instituicao;"); //
+    
+            
+    
+            //stmt.execute("DROP ROLE IF EXISTS admin;");
+            //stmt.execute("flush privileges;");
+            //stmt.execute("CREATE ROLE admin;");
+            //stmt.execute("GRANT ALL PRIVILEGES on webdriver.* to admin;");
+    
+            
+    
+    
+        /// functions
         
-        stmt.execute("create table Compartilhamento("+
-        	"id INT PRIMARY KEY NOT NULL AUTO_INCREMENT," +
-                "id_dono INT, "+
-                "id_arquivo INT, "+
-                "id_usuario_compartilhado INT,"+
-                "data DATE,"
-                + "FOREIGN KEY (id_dono) REFERENCES Usuario(id) ON DELETE CASCADE,"
-                + "FOREIGN KEY (id_arquivo) REFERENCES Arquivo(id) ON DELETE CASCADE,"
-                + "FOREIGN KEY(id_usuario_compartilhado) REFERENCES Usuario(id) ON DELETE CASCADE);"
-            );
-        stmt.execute("GRANT ALL PRIVILEGES on webdriver.Compartilhamento to admin;");
-
-        stmt.execute("create table Versionamento("+
-        	"id INT PRIMARY KEY NOT NULL AUTO_INCREMENT," +
-                "conteudo TEXT," +
-                "data DATE," +
-                "hora TIME," +
-                "operacao INT, "+
-                "id_autor INT, "+
-                "id_arquivo INT, "+
-                "FOREIGN KEY (id_autor) REFERENCES Usuario(id) ON DELETE SET NULL, " +
-                "FOREIGN KEY (id_arquivo) REFERENCES Arquivo(id) ON DELETE CASCADE); "
-            );
-            stmt.execute("GRANT ALL PRIVILEGES on webdriver.Versionamento to admin;");
-
-            stmt.execute("create table Atividades_recentes("+
-        	    "id_arquivo INT," +
-                "data DATE," +
-                "acesso TINYINT," +
-                "FOREIGN KEY (id_arquivo) REFERENCES Arquivo(id) ON DELETE CASCADE); "
-            );
-
-
-
-    //// coisas de pessoas e roles 
-    /// 
-        stmt.execute("DROP ROLE IF EXISTS usuario;"); // usuarios e roles ficam fora da db
-        stmt.execute("flush privileges;");
-        stmt.execute("CREATE ROLE usuario;");
-        stmt.execute("GRANT INSERT on webdriver.Arquivo to usuario;");
-        //stmt.execute("GRANT INSERT, UPDATE, DELETE on webdriver.Compartilhamento to usuario;");
-        //stmt.execute("GRANT INSERT, UPDATE, DELETE on webdriver.Suporte to usuario;");
-        stmt.execute("GRANT INSERT on webdriver.Suporte to usuario;");
-        stmt.execute("GRANT INSERT on webdriver.Comentario to usuario;");
-
-        //stmt.execute("DROP ROLE IF EXISTS admin;");
-        //stmt.execute("flush privileges;");
-        //stmt.execute("CREATE ROLE admin;");
-        //stmt.execute("GRANT ALL PRIVILEGES on webdriver.* to admin;");
-
-        
-
-
-    /// functions
-    
-    stmt.execute("DROP FUNCTION IF EXISTS echoVarchar");
-    stmt.execute
-    (
-    "create function echoVarchar() returns VARCHAR(100) return @echoVarchar;" 
-    );
-
-    stmt.execute("DROP FUNCTION IF EXISTS echoInt");
-    stmt.execute
-    (
-    "create function echoInt() returns INT return @echoInt;"
-    );
-
-
-    stmt.execute("DROP FUNCTION IF EXISTS maisQueCemDias");
-    stmt.execute
-    (
-    "create function maisQueCeMDias(input INT) returns TINYINT " +
-    "BEGIN " +
-    "DECLARE data_arquivo DATE; " +
-    "DECLARE diferenca INT; " +
-    "SET data_arquivo = (SELECT data from Atividades_recentes WHERE (id_arquivo = input) ); " +
-    "SET diferenca = (DATEDIFF(CURDATE(), data_arquivo)); " +
-    "if diferenca > 100 then  " +
-    "RETURN 1; " +
-    "end if; " +
-    "if diferenca <= 100 then  " +
-    "RETURN 0; " +
-    "end if; " +
-    "END"
-    );
-
-    
-    stmt.execute("DROP VIEW IF EXISTS getUserInfo");
-    stmt.execute("CREATE SQL SECURITY DEFINER VIEW getUserInfo AS  "+
-    "select id, id_admin, email, data_ingresso, id_instituicao FROM Usuario where login = echoVarchar(); "
-    );
-    stmt.execute("GRANT SELECT on webdriver.getUserInfo to usuario;");
-    stmt.execute("GRANT SELECT on webdriver.getUserInfo to admin;");
-
-
-    stmt.execute("DROP VIEW IF EXISTS verMeusSuportes");
-    stmt.execute("CREATE SQL SECURITY DEFINER VIEW verMeusSuportes AS  "+
-    "select s.descricao, s.data, s.hora, s.status, r.descricao as resposta FROM Suporte s LEFT JOIN Resposta r on(s.id_resposta = r.id_resposta) where id_usuario = echoInt()  ; "
-    );
-    stmt.execute("GRANT SELECT on webdriver.verMeusSuportes to usuario;");
-    stmt.execute("GRANT SELECT on webdriver.verMeusSuportes to admin;");
-
-    stmt.execute("DROP VIEW IF EXISTS verMeusArquivos");
-    stmt.execute("CREATE SQL SECURITY DEFINER VIEW verMeusArquivos AS  "+
-    "select a.conteudo, a.nome, a.tipo, a.permissoes, a.data_alteracao, a.tamanho, a.url FROM Arquivo a LEFT JOIN Usuario u on (a.id_dono = u.id) where id_dono = echoInt(); "
-    );
-    stmt.execute("GRANT SELECT on webdriver.verMeusArquivos to usuario;");
-    stmt.execute("GRANT SELECT on webdriver.verMeusArquivos to admin;");
-
-    stmt.execute("DROP VIEW IF EXISTS arquivosCompartilhadosComigo");
-    stmt.execute("CREATE SQL SECURITY DEFINER VIEW arquivosCompartilhadosComigo AS  "+
-    "select a.conteudo, a.nome, a.tipo, a.data_alteracao, a.tamanho, a.url, u.login FROM Arquivo a LEFT JOIN Usuario u on (u.id = a.id_dono) LEFT JOIN Compartilhamento c on (a.id = c.id_arquivo) where id_usuario_compartilhado = echoInt(); "
-    );
-    stmt.execute("GRANT SELECT on webdriver.arquivosCompartilhadosComigo to usuario;");
-    stmt.execute("GRANT SELECT on webdriver.arquivosCompartilhadosComigo to admin;");
-
-
-    
-
-    stmt.execute
-    (
-        "CREATE DEFINER=`root`@`localhost` TRIGGER IF NOT EXISTS safe_security "+
-        "BEFORE INSERT ON Arquivo FOR EACH ROW " +
-        "BEGIN " +
-        "if new.tipo = 'exe' then " +
-        "signal sqlstate '45000' set message_text = 'Erro : Arquivos executaveis nao podem ser inseridos!'; " +
-        "end if; "+
-        "END"
-    );
-
-    stmt.execute
-    (
-        "CREATE DEFINER=`root`@`localhost` TRIGGER IF NOT EXISTS arquivo_duplicado "+
-        "BEFORE INSERT ON Arquivo FOR EACH ROW " +
-        "BEGIN " +
-        "DECLARE checkDuplicado INT; " +
-        "SET checkDuplicado = ( SELECT EXISTS ( select * from Arquivo WHERE (nome = new.nome) AND (tipo = new.tipo) AND (id_dono = new.id_dono) ) ); " +
-        "if checkDuplicado = 1 then " +
-        "signal sqlstate '45000' set message_text = 'Erro : Voce ja tem um arquivo com o mesmo nome e tipo!'; " +
-        "end if; "+
-        "END"
-    );
-
-    stmt.execute
-    (
-        "CREATE DEFINER=`root`@`localhost` TRIGGER IF NOT EXISTS Usuario_duplicado "+
-        "BEFORE INSERT ON Usuario FOR EACH ROW " +
-        "BEGIN " +
-        "DECLARE checkDuplicado INT; " +
-        "SET checkDuplicado = ( SELECT EXISTS ( select * from Usuario WHERE (login = new.login) ) ); " +
-        "if checkDuplicado = 1 then " +
-        "signal sqlstate '45000' set message_text = 'Erro : Ja existe um usuario com esse login!'; " +
-        "end if; "+
-        "END"
-    );
-
-    // SET checkPerm = ( SELECT EXISTS ( SELECT a.id from Arquivo a INNER JOIN Compartilhamento c on (a.id = c.id_arquivo) AND (a.id_dono = c.id_dono) WHERE (a.nome = nomeConfirm) AND (a.tipo = tipoConfirm) ) AS result); " +
-
-    stmt.execute
-    (
-        "CREATE DEFINER=`root`@`localhost` TRIGGER IF NOT EXISTS auto_compartilhamento "+
-        "BEFORE INSERT ON Compartilhamento FOR EACH ROW " +
-        "BEGIN " +
-        "if new.id_dono = new.id_usuario_compartilhado then " +
-        "signal sqlstate '45000' set message_text = 'Erro : Nao pode compartilhar arquivo com si mesmo!'; " +
-        "end if; "+
-        "END"
-    );
-
-
-    stmt.execute
-    (
-        "CREATE DEFINER=`root`@`localhost` TRIGGER IF NOT EXISTS versionamento_criacao "+
-        "AFTER INSERT ON Arquivo FOR EACH ROW " +
-        "BEGIN " +
-        "INSERT INTO Versionamento (conteudo, data, hora, operacao, id_autor, id_arquivo) VALUES (new.conteudo, CURDATE(), CURTIME(), 1, new.id_dono, new.id); " +
-        "END"
-    );
-
-    stmt.execute
-    (
-        "CREATE DEFINER=`root`@`localhost` TRIGGER IF NOT EXISTS versionamento_update "+
-        "AFTER UPDATE ON Arquivo FOR EACH ROW " +
-        "BEGIN " +
-        "DECLARE nome VARCHAR(100); " +
-        "DECLARE targetID INT; " +
-        "SET nome = ( USER() ); " +
-        "SET nome = ( LEFT(nome, CHAR_LENGTH(nome) - 10) ); " +
-        "SET targetID = ( SELECT id from Usuario WHERE (login = nome) ); " +
-        "INSERT INTO Versionamento (conteudo, data, hora, operacao, id_autor, id_arquivo) VALUES (new.conteudo, CURDATE(), CURTIME(), 2, targetID, new.id); " +
-        "END"
-    );
-
-    stmt.execute
-    (
-        "CREATE DEFINER=`root`@`localhost` TRIGGER IF NOT EXISTS registrar_Criacao "+
-        "AFTER INSERT ON Arquivo FOR EACH ROW " +
-        "BEGIN " +
-        "INSERT INTO Atividades_recentes (id_arquivo, data, acesso) VALUES (new.id, new.data_alteracao, 1); " +
-        "END"
-    );
-
-    stmt.execute
-    (
-        "CREATE DEFINER=`root`@`localhost` TRIGGER IF NOT EXISTS registrar_Alteracao "+
-        "AFTER UPDATE ON Arquivo FOR EACH ROW " +
-        "BEGIN " +
-        "UPDATE Atividades_recentes SET data = new.data_alteracao WHERE id_arquivo = new.id; " +
-        "END"
-    );
-
-
-    stmt.execute("CREATE DEFINER=`root`@`localhost` PROCEDURE IF NOT EXISTS Chavear" + 
-    "(IN input INT) " +
-    "BEGIN " +
-    "DECLARE resultado TINYINT; " +
-    "SET resultado = ( SELECT acesso FROM Atividades_recentes WHERE (id_arquivo = input) ); " +
-    "if resultado = 1 then " +
-    "UPDATE Atividades_recentes SET acesso = 0 WHERE id_arquivo = input; " +
-    "end if; " +
-    "if resultado = 0 then " +
-    "UPDATE Atividades_recentes SET acesso = 1 WHERE id_arquivo = input; " +
-    "end if; " +
-    "END"
-    );
-
-    stmt.execute("CREATE DEFINER=`root`@`localhost` PROCEDURE IF NOT EXISTS Atualizar_acessos()" + 
-    "BEGIN " +
-
-    "UPDATE Atividades_recentes " +
-    " SET acesso = 0 WHERE (acesso = 1) AND (maisQueCemDias(id_arquivo) = 1); " +
-
-    "UPDATE Atividades_recentes " +
-    " SET acesso = 1 WHERE (acesso = 0) AND (maisQueCemDias(id_arquivo) = 0); " +
-    "END"
-    );
-
-
-
-    /// procedures
-
-    stmt.execute("CREATE DEFINER=`root`@`localhost` PROCEDURE IF NOT EXISTS getArqID" +
-    "(IN thisid INT, IN nomeConfirm VARCHAR(100), IN tipoConfirm VARCHAR(100), OUT result INT ) " +
-    "BEGIN " +
-    "DECLARE checkPerm INT; " +
-    "SET checkPerm = ( SELECT EXISTS ( SELECT * FROM Arquivo a LEFT JOIN Usuario u on (a.id_dono = u.id) WHERE (id_dono = thisid) AND (tipo = tipoConfirm) AND (nome = nomeConfirm) ) AS result); " +
-    "if checkPerm = 1 then " +
-    "SET result = ( SELECT a.id FROM Arquivo a LEFT JOIN Usuario u on (a.id_dono = u.id) WHERE  (id_dono = thisid) AND (tipo = tipoConfirm) AND (nome = nomeConfirm)); " +
-    "SET checkPerm = 2; " +
-    "end if; " +
-
-    "if checkPerm = 0 then " + 
-    "SET checkPerm = ( SELECT EXISTS ( SELECT a.id from Arquivo a INNER JOIN Compartilhamento c on (a.id = c.id_arquivo) AND (a.id_dono = c.id_dono) WHERE (a.nome = nomeConfirm) AND (a.tipo = tipoConfirm) ) AS result); " +
-    "end if; " +
-    "if checkPerm = 0 then " +
-    "signal sqlstate '45000' set message_text = 'Erro : Nao tem permissao pra ver o arquivo!'; SET result = checkPerm; " +
-    "end if; " +
-    "if checkPerm = 1 then " +
-    "SET result = (SELECT a.id from Arquivo a INNER JOIN Compartilhamento c on (a.id = c.id_arquivo) AND (a.id_dono = c.id_dono) WHERE (a.nome = nomeConfirm) AND (a.tipo = tipoConfirm) );  " +
-
-    "end if; " +
-    "END"
-    );
-
-    stmt.execute("CREATE DEFINER=`root`@`localhost` PROCEDURE IF NOT EXISTS hostOnlyArqID" +
-    "(IN thisid INT, IN nomeConfirm VARCHAR(100), IN tipoConfirm VARCHAR(100), OUT result INT ) " +
-    "BEGIN " +
-    "DECLARE checkPerm INT; " +
-    "SET checkPerm = ( SELECT EXISTS ( SELECT * FROM Arquivo a LEFT JOIN Usuario u on (a.id_dono = u.id) WHERE (id_dono = thisid) AND (tipo = tipoConfirm) AND (nome = nomeConfirm) ) AS result); " +
-    "if checkPerm = 1 then " +
-    "SET result = ( SELECT a.id FROM Arquivo a LEFT JOIN Usuario u on (a.id_dono = u.id) WHERE  (id_dono = thisid) AND (tipo = tipoConfirm) AND (nome = nomeConfirm)); " +
-    "end if; " +
-
-    "if checkPerm = 0 then " +
-    "signal sqlstate '45000' set message_text = 'Erro : Nao e o dono do arquivo arquivo!'; SET result = checkPerm; " +
-    "end if; " +
-    
-    "END"
-    );
-
-    stmt.execute("CREATE DEFINER=`root`@`localhost` PROCEDURE IF NOT EXISTS anyArqID" +
-    "(IN hostlogin VARCHAR(100), IN nomeConfirm VARCHAR(100), IN tipoConfirm VARCHAR(100), OUT result INT) " +
-    "BEGIN " +
-    "DECLARE hostID INT; " +
-    "SET hostID = ( SELECT u.id FROM Arquivo a LEFT JOIN Usuario u on (a.id_dono = u.id) WHERE (login = hostlogin) AND (tipo = tipoConfirm) and (nome = nomeConfirm) ); " +
-    "SET result = ( SELECT a.id FROM Arquivo a LEFT JOIN Usuario u on (a.id_dono = u.id) WHERE (id_dono = hostID) AND (tipo = tipoConfirm) AND (nome = nomeConfirm) ); " +
-    "END"
-    );
-
-    stmt.execute("CREATE DEFINER=`root`@`localhost` PROCEDURE IF NOT EXISTS getQtdCompartilhamentos" +
-   "(IN ownerid INT, in nomeConfirm VARCHAR(100), IN tipoConfirm VARCHAR(100), OUT result INT) " +
-   "BEGIN " +
-   "CALL hostOnlyArqID(ownerid, nomeConfirm, tipoConfirm, @arqID); " +
-   "SET result = ( SELECT COUNT(*) FROM Compartilhamento WHERE (id_arquivo = @arqID) ); " +
-   "END"
-   );
-   stmt.execute("GRANT EXECUTE ON PROCEDURE webdriver.getQtdCompartilhamentos to usuario;");
-   stmt.execute("GRANT EXECUTE ON PROCEDURE webdriver.getQtdCompartilhamentos to admin;");
-
-
-   stmt.execute("CREATE DEFINER=`root`@`localhost` PROCEDURE IF NOT EXISTS Remover_Acessos" +
-   "(IN ownerid INT, in nomeConfirm VARCHAR(100), IN tipoConfirm VARCHAR(100)) " +
-   "BEGIN " +
-   "CALL hostOnlyArqID(ownerid, nomeConfirm, tipoConfirm, @hostOnlyArqID); " +
-   "DELETE FROM Compartilhamento WHERE (id_arquivo = @arqID); " +
-   "END"
-   );
-   stmt.execute("GRANT EXECUTE ON PROCEDURE webdriver.Remover_Acessos to usuario;");
-   stmt.execute("GRANT EXECUTE ON PROCEDURE webdriver.Remover_Acessos to admin;");
-
-
-   stmt.execute("CREATE DEFINER=`root`@`localhost` PROCEDURE IF NOT EXISTS Remover_Arquivo" +
-   "(IN ownerid INT, in nomeConfirm VARCHAR(100), IN tipoConfirm VARCHAR(100)) " +
-   "BEGIN " +
-   "CALL hostOnlyArqID(ownerid, nomeConfirm, tipoConfirm, @arqID); " +
-   "DELETE FROM Arquivo WHERE (id = @arqID); " +
-   "END"
-   );
-   stmt.execute("GRANT EXECUTE ON PROCEDURE webdriver.Remover_Arquivo to usuario;");
-   stmt.execute("GRANT EXECUTE ON PROCEDURE webdriver.Remover_Acessos to admin;");
-
-
-   stmt.execute("CREATE DEFINER=`root`@`localhost` PROCEDURE IF NOT EXISTS Atualizar_Arquivo" +
-   "(IN userid INT, in nomeConfirm VARCHAR(100), IN tipoConfirm VARCHAR(100), IN novoConteudo TEXT) " +
-   "BEGIN " +
-   "CALL getArqID(userid, nomeConfirm, tipoConfirm, @arqID); " +
-   "UPDATE Arquivo SET conteudo = novoConteudo, data_alteracao = CURDATE() WHERE (id = @arqID); " +
-   "END"
-   );
-   stmt.execute("GRANT EXECUTE ON PROCEDURE webdriver.Atualizar_Arquivo to usuario;");
-   stmt.execute("GRANT EXECUTE ON PROCEDURE webdriver.Atualizar_Arquivo to admin;");
-
-
-   stmt.execute("CREATE DEFINER=`root`@`localhost` PROCEDURE IF NOT EXISTS CriarComentario" +
-   "(IN userid INT, in nomeConfirm VARCHAR(100), IN tipoConfirm VARCHAR(100), IN novoComentario TEXT )" +
-   "BEGIN " +
-   "CALL getArqID(userid, nomeConfirm, tipoConfirm, @arqID); " +
-   "INSERT INTO Comentario (conteudo, hora, data, id_autor, id_arquivo) VALUES (novoComentario, CURTIME(), CURDATE(), userid, @arqID); " +
-   "END" 
-   );
-   stmt.execute("GRANT EXECUTE ON PROCEDURE webdriver.CriarComentario to usuario;");
-   stmt.execute("GRANT EXECUTE ON PROCEDURE webdriver.CriarComentario to admin;");
-   
-
-   stmt.execute("CREATE DEFINER=`root`@`localhost` PROCEDURE IF NOT EXISTS verComentarios" +
-   "(IN userid INT, in nomeConfirm VARCHAR(100), IN tipoConfirm VARCHAR(100) ) " +
-   "BEGIN " +   
-   "CALL getArqID(userid, nomeConfirm, tipoConfirm, @arqID); " +
-   "SELECT c.conteudo, c.hora, c.data, u.login FROM Comentario c LEFT JOIN Usuario u on (u.id = c.id_autor) where id_arquivo = @arqID;" +
-   "END"
-   );
-   stmt.execute("GRANT EXECUTE ON PROCEDURE webdriver.verComentarios to usuario;");
-   stmt.execute("GRANT EXECUTE ON PROCEDURE webdriver.verComentarios to admin;");
-
-
-   stmt.execute("CREATE DEFINER=`root`@`localhost` PROCEDURE IF NOT EXISTS verVersionamento" +
-   "(IN hostlogin VARCHAR(100), in nomeConfirm VARCHAR(100), IN tipoConfirm VARCHAR(100) ) " +
-   "BEGIN " +   
-   "CALL anyArqID(hostlogin, nomeConfirm, tipoConfirm, @arqID); " +
-   "SELECT v.conteudo, v.data, v.hora, v.operacao, u.login FROM Versionamento v LEFT JOIN Usuario u on (u.id = v.id_autor) where id_arquivo = @arqID;" +
-   "END"
-   );
-   stmt.execute("GRANT EXECUTE ON PROCEDURE webdriver.verVersionamento to usuario;");
-   stmt.execute("GRANT EXECUTE ON PROCEDURE webdriver.verVersionamento to admin;");
-
-
-
-
-    stmt.execute( "CREATE DEFINER=`root`@`localhost` PROCEDURE IF NOT EXISTS compartilharArquivo" +
-                " (IN ownerID INT, IN tipoConfirm VARCHAR(100), IN nomeConfirm VARCHAR(100), IN targetlogin VARCHAR(100))" +
-                "BEGIN " +
-                "DECLARE checkOwner INT; " +
-                "DECLARE checkTarget INT; " +
-                "DECLARE checkRepeated INT; " +
-                "DECLARE id_arq INT; " +
-                "DECLARE id_target INT; " +
-                "SET checkOwner = (SELECT EXISTS (SELECT * FROM Arquivo a LEFT JOIN Usuario u on (a.id_dono = u.id) WHERE (id_dono = ownerID) ) AS result); " +
-                "if checkOwner = 0 then " +
-                "signal sqlstate '45000' set message_text = 'Erro : Nao e dono do arquivo!'; " +
-                "end if; " +
-                "if checkOwner = 1 then " +
-                "SET id_arq = (SELECT id from Arquivo WHERE (id_dono = ownerID) AND (nome = nomeConfirm) AND (tipo = tipoConfirm)); " +
-
-                "SET checkTarget = (SELECT EXISTS (SELECT * from Usuario where (login = targetlogin)) as result); " +
-                "if checkTarget = 0 then " +
-                "signal sqlstate '45000' set message_text = 'Erro : Usuario com qual compartilhar nao existe!'; " +
-                "end if; " +
-                "if checkTarget = 1 then " +
-                "SET id_target = (SELECT id from Usuario WHERE (login = targetlogin)); " + // clear
-
-                "SET checkRepeated = (SELECT EXISTS (SELECT * FROM Compartilhamento WHERE (id_usuario_compartilhado = id_target) AND (id_arquivo = id_arq)) AS result); " +
-                "if checkRepeated = 1 then " +
-                "signal sqlstate '45000' set message_text = 'Erro : Compartilho com o usuario ja foi feito!'; " +
-                "end if; " +
-                "if checkRepeated = 0 then " +
-                "INSERT INTO Compartilhamento (id_dono, id_arquivo, id_usuario_compartilhado, data) VALUES (ownerID, id_arq, id_target, CURDATE() ); " +
-                "end if; " +
-                "end if; " +
-                "end if; " +
-                "END"
+        stmt.execute("DROP FUNCTION IF EXISTS echoVarchar");
+        stmt.execute
+        (
+        "create function echoVarchar() returns VARCHAR(100) return @echoVarchar;" 
         );
-        stmt.execute("GRANT EXECUTE ON PROCEDURE webdriver.compartilharArquivo to usuario;");
-        stmt.execute("GRANT EXECUTE ON PROCEDURE webdriver.compartilharArquivo to admin;");
-
+    
+        stmt.execute("DROP FUNCTION IF EXISTS echoInt");
+        stmt.execute
+        (
+        "create function echoInt() returns INT return @echoInt;"
+        );
+    
+    
+        stmt.execute("DROP FUNCTION IF EXISTS maisQueCemDias");
+        stmt.execute
+        (
+        "create function maisQueCeMDias(input INT) returns TINYINT " +
+        "BEGIN " +
+        "DECLARE data_arquivo DATE; " +
+        "DECLARE diferenca INT; " +
+        "SET data_arquivo = (SELECT data from Atividades_recentes WHERE (id_arquivo = input) ); " +
+        "SET diferenca = (DATEDIFF(CURDATE(), data_arquivo)); " +
+        "if diferenca > 100 then  " +
+        "RETURN 1; " +
+        "end if; " +
+        "if diferenca <= 100 then  " +
+        "RETURN 0; " +
+        "end if; " +
+        "END"
+        );
+    
+        stmt.execute("DROP VIEW IF EXISTS getInstituicaoInfo");
+        stmt.execute("CREATE SQL SECURITY DEFINER VIEW getInstituicaoInfo AS  "+
+        "select id, causa_social, endereco, data_aquisicao, plano_id FROM Instituicao where nome = echoVarchar(); "
+        );
+        stmt.execute("GRANT SELECT on webdriver.getInstituicaoInfo to instituicao;");
+        stmt.execute("GRANT SELECT on webdriver.getInstituicaoInfo to admin;");
+    
+        stmt.execute("DROP VIEW IF EXISTS getPlanoInfo");
+        stmt.execute("CREATE SQL SECURITY DEFINER VIEW getPlanoInfo AS  "+
+        "select nome, duracao, limite_users FROM Plano where id = echoInt(); "
+        );
+        stmt.execute("GRANT SELECT on webdriver.getPlanoInfo to instituicao;");
+        stmt.execute("GRANT SELECT on webdriver.getPlanoInfo to admin;");
+    
+        
+        stmt.execute("DROP VIEW IF EXISTS getUserInfo");
+        stmt.execute("CREATE SQL SECURITY DEFINER VIEW getUserInfo AS  "+
+        "select id, id_admin, email, data_ingresso, id_instituicao FROM Usuario where login = echoVarchar(); "
+        );
+        stmt.execute("GRANT SELECT on webdriver.getUserInfo to usuario;");
+        stmt.execute("GRANT SELECT on webdriver.getUserInfo to admin;");
+    
+    
+        stmt.execute("DROP VIEW IF EXISTS verMeusSuportes");
+        stmt.execute("CREATE SQL SECURITY DEFINER VIEW verMeusSuportes AS  "+
+        "select s.descricao, s.data, s.hora, s.status, r.descricao as resposta FROM Suporte s LEFT JOIN Resposta r on(s.id_resposta = r.id_resposta) where id_usuario = echoInt()  ; "
+        );
+        stmt.execute("GRANT SELECT on webdriver.verMeusSuportes to usuario;");
+        stmt.execute("GRANT SELECT on webdriver.verMeusSuportes to admin;");
+    
+        stmt.execute("DROP VIEW IF EXISTS verMeusArquivos");
+        stmt.execute("CREATE SQL SECURITY DEFINER VIEW verMeusArquivos AS  "+
+        "select a.conteudo, a.nome, a.tipo, a.permissoes, a.data_alteracao, a.tamanho, a.url FROM Arquivo a LEFT JOIN Usuario u on (a.id_dono = u.id) where id_dono = echoInt(); "
+        );
+        stmt.execute("GRANT SELECT on webdriver.verMeusArquivos to usuario;");
+        stmt.execute("GRANT SELECT on webdriver.verMeusArquivos to admin;");
+    
+        stmt.execute("DROP VIEW IF EXISTS verArquivosInstituicao");
+        stmt.execute("CREATE SQL SECURITY DEFINER VIEW verArquivosInstituicao AS  "+
+        //"select a.conteudo, a.nome, a.tipo, a.permissoes, a.data_alteracao, a.tamanho, a.url, u.login FROM Arquivo a LEFT JOIN Usuario u on (a.id_dono = u.id) where id_instituicao = echoInt(); "
+        "select u.login, a.nome, a.conteudo, a.tipo, a.permissoes, a.data_alteracao, a.tamanho, a.url FROM Usuario u LEFT JOIN Arquivo a on (a.id_dono = u.id) where id_instituicao = echoInt(); "
+        );
+        stmt.execute("GRANT SELECT on webdriver.verArquivosInstituicao to instituicao;");
+        stmt.execute("GRANT SELECT on webdriver.verArquivosInstituicao to admin;");
+    
+        stmt.execute("DROP VIEW IF EXISTS verMembrosInstituicao");
+        stmt.execute("CREATE SQL SECURITY DEFINER VIEW verMembrosInstituicao AS  "+
+        "select login, email, senha, data_ingresso FROM Usuario where id_instituicao = echoInt(); "
+        );
+        stmt.execute("GRANT SELECT on webdriver.verMembrosInstituicao to instituicao;");
+        stmt.execute("GRANT SELECT on webdriver.verMembrosInstituicao to admin;");
+    
+    
+    
+        stmt.execute("DROP VIEW IF EXISTS arquivosCompartilhadosComigo");
+        stmt.execute("CREATE SQL SECURITY DEFINER VIEW arquivosCompartilhadosComigo AS  "+
+        "select a.conteudo, a.nome, a.tipo, a.data_alteracao, a.tamanho, a.url, u.login FROM Arquivo a LEFT JOIN Usuario u on (u.id = a.id_dono) LEFT JOIN Compartilhamento c on (a.id = c.id_arquivo) where id_usuario_compartilhado = echoInt(); "
+        );
+        stmt.execute("GRANT SELECT on webdriver.arquivosCompartilhadosComigo to usuario;");
+        stmt.execute("GRANT SELECT on webdriver.arquivosCompartilhadosComigo to admin;");
+    
+    
+        
+    
+        stmt.execute
+        (
+            "CREATE DEFINER=`root`@`localhost` TRIGGER IF NOT EXISTS safe_security "+
+            "BEFORE INSERT ON Arquivo FOR EACH ROW " +
+            "BEGIN " +
+            "if new.tipo = 'exe' then " +
+            "signal sqlstate '45000' set message_text = 'Erro : Arquivos executaveis nao podem ser inseridos!'; " +
+            "end if; "+
+            "END"
+        );
+    
+        stmt.execute
+        (
+            "CREATE DEFINER=`root`@`localhost` TRIGGER IF NOT EXISTS arquivo_duplicado "+
+            "BEFORE INSERT ON Arquivo FOR EACH ROW " +
+            "BEGIN " +
+            "DECLARE checkDuplicado INT; " +
+            "SET checkDuplicado = ( SELECT EXISTS ( select * from Arquivo WHERE (nome = new.nome) AND (tipo = new.tipo) AND (id_dono = new.id_dono) ) ); " +
+            "if checkDuplicado = 1 then " +
+            "signal sqlstate '45000' set message_text = 'Erro : Voce ja tem um arquivo com o mesmo nome e tipo!'; " +
+            "end if; "+
+            "END"
+        );
+    
+        stmt.execute
+        (
+            "CREATE DEFINER=`root`@`localhost` TRIGGER IF NOT EXISTS Usuario_duplicado "+
+            "BEFORE INSERT ON Usuario FOR EACH ROW " +
+            "BEGIN " +
+            "DECLARE checkDuplicado INT; " +
+            "SET checkDuplicado = ( SELECT EXISTS ( select * from Usuario WHERE (login = new.login) ) ); " +
+            "if checkDuplicado = 1 then " +
+            "signal sqlstate '45000' set message_text = 'Erro : Ja existe um usuario com esse login!'; " +
+            "end if; "+
+            "END"
+        );
+    
+        // SET checkPerm = ( SELECT EXISTS ( SELECT a.id from Arquivo a INNER JOIN Compartilhamento c on (a.id = c.id_arquivo) AND (a.id_dono = c.id_dono) WHERE (a.nome = nomeConfirm) AND (a.tipo = tipoConfirm) ) AS result); " +
+    
+        stmt.execute
+        (
+            "CREATE DEFINER=`root`@`localhost` TRIGGER IF NOT EXISTS auto_compartilhamento "+
+            "BEFORE INSERT ON Compartilhamento FOR EACH ROW " +
+            "BEGIN " +
+            "if new.id_dono = new.id_usuario_compartilhado then " +
+            "signal sqlstate '45000' set message_text = 'Erro : Nao pode compartilhar arquivo com si mesmo!'; " +
+            "end if; "+
+            "END"
+        );
+    
+    
+        stmt.execute
+        (
+            "CREATE DEFINER=`root`@`localhost` TRIGGER IF NOT EXISTS versionamento_criacao "+
+            "AFTER INSERT ON Arquivo FOR EACH ROW " +
+            "BEGIN " +
+            "INSERT INTO Versionamento (conteudo, data, hora, operacao, id_autor, id_arquivo) VALUES (new.conteudo, CURDATE(), CURTIME(), 1, new.id_dono, new.id); " +
+            "END"
+        );
+    
+        stmt.execute
+        (
+            "CREATE DEFINER=`root`@`localhost` TRIGGER IF NOT EXISTS versionamento_update "+
+            "AFTER UPDATE ON Arquivo FOR EACH ROW " +
+            "BEGIN " +
+            "DECLARE nome VARCHAR(100); " +
+            "DECLARE targetID INT; " +
+            "SET nome = ( USER() ); " +
+            "SET nome = ( LEFT(nome, CHAR_LENGTH(nome) - 10) ); " +
+            "SET targetID = ( SELECT id from Usuario WHERE (login = nome) ); " +
+            "INSERT INTO Versionamento (conteudo, data, hora, operacao, id_autor, id_arquivo) VALUES (new.conteudo, CURDATE(), CURTIME(), 2, targetID, new.id); " +
+            "END"
+        );
+    
+        stmt.execute
+        (
+            "CREATE DEFINER=`root`@`localhost` TRIGGER IF NOT EXISTS registrar_Criacao "+
+            "AFTER INSERT ON Arquivo FOR EACH ROW " +
+            "BEGIN " +
+            "INSERT INTO Atividades_recentes (id_arquivo, data, acesso) VALUES (new.id, new.data_alteracao, 1); " +
+            "END"
+        );
+    
+        stmt.execute
+        (
+            "CREATE DEFINER=`root`@`localhost` TRIGGER IF NOT EXISTS registrar_Alteracao "+
+            "AFTER UPDATE ON Arquivo FOR EACH ROW " +
+            "BEGIN " +
+            "UPDATE Atividades_recentes SET data = new.data_alteracao WHERE id_arquivo = new.id; " +
+            "END"
+        );
+    
+    
+        stmt.execute("CREATE DEFINER=`root`@`localhost` PROCEDURE IF NOT EXISTS Chavear" + 
+        "(IN input INT) " +
+        "BEGIN " +
+        "DECLARE resultado TINYINT; " +
+        "SET resultado = ( SELECT acesso FROM Atividades_recentes WHERE (id_arquivo = input) ); " +
+        "if resultado = 1 then " +
+        "UPDATE Atividades_recentes SET acesso = 0 WHERE id_arquivo = input; " +
+        "end if; " +
+        "if resultado = 0 then " +
+        "UPDATE Atividades_recentes SET acesso = 1 WHERE id_arquivo = input; " +
+        "end if; " +
+        "END"
+        );
+    
+        stmt.execute("CREATE DEFINER=`root`@`localhost` PROCEDURE IF NOT EXISTS Atualizar_acessos()" + 
+        "BEGIN " +
+    
+        "UPDATE Atividades_recentes " +
+        " SET acesso = 0 WHERE (acesso = 1) AND (maisQueCemDias(id_arquivo) = 1); " +
+    
+        "UPDATE Atividades_recentes " +
+        " SET acesso = 1 WHERE (acesso = 0) AND (maisQueCemDias(id_arquivo) = 0); " +
+        "END"
+        );
+    
+    
+    
+        /// procedures
+    
+        stmt.execute("CREATE DEFINER=`root`@`localhost` PROCEDURE IF NOT EXISTS getArqID" +
+        "(IN thisid INT, IN nomeConfirm VARCHAR(100), IN tipoConfirm VARCHAR(100), OUT result INT ) " +
+        "BEGIN " +
+        "DECLARE checkPerm INT; " +
+        "SET checkPerm = ( SELECT EXISTS ( SELECT * FROM Arquivo a LEFT JOIN Usuario u on (a.id_dono = u.id) WHERE (id_dono = thisid) AND (tipo = tipoConfirm) AND (nome = nomeConfirm) ) AS result); " +
+        "if checkPerm = 1 then " +
+        "SET result = ( SELECT a.id FROM Arquivo a LEFT JOIN Usuario u on (a.id_dono = u.id) WHERE  (id_dono = thisid) AND (tipo = tipoConfirm) AND (nome = nomeConfirm)); " +
+        "SET checkPerm = 2; " +
+        "end if; " +
+    
+        "if checkPerm = 0 then " + 
+        "SET checkPerm = ( SELECT EXISTS ( SELECT a.id from Arquivo a INNER JOIN Compartilhamento c on (a.id = c.id_arquivo) AND (a.id_dono = c.id_dono) WHERE (a.nome = nomeConfirm) AND (a.tipo = tipoConfirm) ) AS result); " +
+        "end if; " +
+        "if checkPerm = 0 then " +
+        "signal sqlstate '45000' set message_text = 'Erro : Nao tem permissao pra ver o arquivo!'; SET result = checkPerm; " +
+        "end if; " +
+        "if checkPerm = 1 then " +
+        "SET result = (SELECT a.id from Arquivo a INNER JOIN Compartilhamento c on (a.id = c.id_arquivo) AND (a.id_dono = c.id_dono) WHERE (a.nome = nomeConfirm) AND (a.tipo = tipoConfirm) );  " +
+    
+        "end if; " +
+        "END"
+        );
+    
+        stmt.execute("CREATE DEFINER=`root`@`localhost` PROCEDURE IF NOT EXISTS hostOnlyArqID" +
+        "(IN thisid INT, IN nomeConfirm VARCHAR(100), IN tipoConfirm VARCHAR(100), OUT result INT ) " +
+        "BEGIN " +
+        "DECLARE checkPerm INT; " +
+        "SET checkPerm = ( SELECT EXISTS ( SELECT * FROM Arquivo a LEFT JOIN Usuario u on (a.id_dono = u.id) WHERE (id_dono = thisid) AND (tipo = tipoConfirm) AND (nome = nomeConfirm) ) AS result); " +
+        "if checkPerm = 1 then " +
+        "SET result = ( SELECT a.id FROM Arquivo a LEFT JOIN Usuario u on (a.id_dono = u.id) WHERE  (id_dono = thisid) AND (tipo = tipoConfirm) AND (nome = nomeConfirm)); " +
+        "end if; " +
+    
+        "if checkPerm = 0 then " +
+        "signal sqlstate '45000' set message_text = 'Erro : Nao e o dono do arquivo arquivo!'; SET result = checkPerm; " +
+        "end if; " +
+        
+        "END"
+        );
+    
+        stmt.execute("CREATE DEFINER=`root`@`localhost` PROCEDURE IF NOT EXISTS anyArqID" +
+        "(IN hostlogin VARCHAR(100), IN nomeConfirm VARCHAR(100), IN tipoConfirm VARCHAR(100), OUT result INT) " +
+        "BEGIN " +
+        "DECLARE hostID INT; " +
+        "SET hostID = ( SELECT u.id FROM Arquivo a LEFT JOIN Usuario u on (a.id_dono = u.id) WHERE (login = hostlogin) AND (tipo = tipoConfirm) and (nome = nomeConfirm) ); " +
+        "SET result = ( SELECT a.id FROM Arquivo a LEFT JOIN Usuario u on (a.id_dono = u.id) WHERE (id_dono = hostID) AND (tipo = tipoConfirm) AND (nome = nomeConfirm) ); " +
+        "END"
+        );
+    
+        stmt.execute("CREATE DEFINER=`root`@`localhost` PROCEDURE IF NOT EXISTS getQtdCompartilhamentos" +
+       "(IN ownerid INT, in nomeConfirm VARCHAR(100), IN tipoConfirm VARCHAR(100), OUT result INT) " +
+       "BEGIN " +
+       "CALL hostOnlyArqID(ownerid, nomeConfirm, tipoConfirm, @arqID); " +
+       "SET result = ( SELECT COUNT(*) FROM Compartilhamento WHERE (id_arquivo = @arqID) ); " +
+       "END"
+       );
+       stmt.execute("GRANT EXECUTE ON PROCEDURE webdriver.getQtdCompartilhamentos to usuario;");
+       stmt.execute("GRANT EXECUTE ON PROCEDURE webdriver.getQtdCompartilhamentos to admin;");
+    
+    
+       stmt.execute("CREATE DEFINER=`root`@`localhost` PROCEDURE IF NOT EXISTS Remover_Acessos" +
+       "(IN ownerid INT, in nomeConfirm VARCHAR(100), IN tipoConfirm VARCHAR(100)) " +
+       "BEGIN " +
+       "CALL hostOnlyArqID(ownerid, nomeConfirm, tipoConfirm, @hostOnlyArqID); " +
+       "DELETE FROM Compartilhamento WHERE (id_arquivo = @arqID); " +
+       "END"
+       );
+       stmt.execute("GRANT EXECUTE ON PROCEDURE webdriver.Remover_Acessos to usuario;");
+       stmt.execute("GRANT EXECUTE ON PROCEDURE webdriver.Remover_Acessos to admin;");
+    
+    
+       stmt.execute("CREATE DEFINER=`root`@`localhost` PROCEDURE IF NOT EXISTS Remover_Arquivo" +
+       "(IN ownerid INT, in nomeConfirm VARCHAR(100), IN tipoConfirm VARCHAR(100)) " +
+       "BEGIN " +
+       "CALL hostOnlyArqID(ownerid, nomeConfirm, tipoConfirm, @arqID); " +
+       "DELETE FROM Arquivo WHERE (id = @arqID); " +
+       "END"
+       );
+       stmt.execute("GRANT EXECUTE ON PROCEDURE webdriver.Remover_Arquivo to usuario;");
+       stmt.execute("GRANT EXECUTE ON PROCEDURE webdriver.Remover_Acessos to admin;");
+    
+    
+       stmt.execute("CREATE DEFINER=`root`@`localhost` PROCEDURE IF NOT EXISTS Atualizar_Arquivo" +
+       "(IN userid INT, in nomeConfirm VARCHAR(100), IN tipoConfirm VARCHAR(100), IN novoConteudo TEXT) " +
+       "BEGIN " +
+       "CALL getArqID(userid, nomeConfirm, tipoConfirm, @arqID); " +
+       "UPDATE Arquivo SET conteudo = novoConteudo, data_alteracao = CURDATE() WHERE (id = @arqID); " +
+       "END"
+       );
+       stmt.execute("GRANT EXECUTE ON PROCEDURE webdriver.Atualizar_Arquivo to usuario;");
+       stmt.execute("GRANT EXECUTE ON PROCEDURE webdriver.Atualizar_Arquivo to admin;");
+    
+    
+       stmt.execute("CREATE DEFINER=`root`@`localhost` PROCEDURE IF NOT EXISTS CriarComentario" +
+       "(IN userid INT, in nomeConfirm VARCHAR(100), IN tipoConfirm VARCHAR(100), IN novoComentario TEXT )" +
+       "BEGIN " +
+       "CALL getArqID(userid, nomeConfirm, tipoConfirm, @arqID); " +
+       "INSERT INTO Comentario (conteudo, hora, data, id_autor, id_arquivo) VALUES (novoComentario, CURTIME(), CURDATE(), userid, @arqID); " +
+       "END" 
+       );
+       stmt.execute("GRANT EXECUTE ON PROCEDURE webdriver.CriarComentario to usuario;");
+       stmt.execute("GRANT EXECUTE ON PROCEDURE webdriver.CriarComentario to admin;");
+       
+    
+       stmt.execute("CREATE DEFINER=`root`@`localhost` PROCEDURE IF NOT EXISTS verComentarios" +
+       "(IN userid INT, in nomeConfirm VARCHAR(100), IN tipoConfirm VARCHAR(100) ) " +
+       "BEGIN " +   
+       "CALL getArqID(userid, nomeConfirm, tipoConfirm, @arqID); " +
+       "SELECT c.conteudo, c.hora, c.data, u.login FROM Comentario c LEFT JOIN Usuario u on (u.id = c.id_autor) where id_arquivo = @arqID;" +
+       "END"
+       );
+       stmt.execute("GRANT EXECUTE ON PROCEDURE webdriver.verComentarios to usuario;");
+       stmt.execute("GRANT EXECUTE ON PROCEDURE webdriver.verComentarios to admin;");
+    
+    
+       stmt.execute("CREATE DEFINER=`root`@`localhost` PROCEDURE IF NOT EXISTS verVersionamento" +
+       "(IN hostlogin VARCHAR(100), in nomeConfirm VARCHAR(100), IN tipoConfirm VARCHAR(100) ) " +
+       "BEGIN " +   
+       "CALL anyArqID(hostlogin, nomeConfirm, tipoConfirm, @arqID); " +
+       "SELECT v.conteudo, v.data, v.hora, v.operacao, u.login FROM Versionamento v LEFT JOIN Usuario u on (u.id = v.id_autor) where id_arquivo = @arqID;" +
+       "END"
+       );
+       stmt.execute("GRANT EXECUTE ON PROCEDURE webdriver.verVersionamento to usuario;");
+       stmt.execute("GRANT EXECUTE ON PROCEDURE webdriver.verVersionamento to instituicao;");
+       stmt.execute("GRANT EXECUTE ON PROCEDURE webdriver.verVersionamento to admin;");
+    
+    
+    
+    
+        stmt.execute( "CREATE DEFINER=`root`@`localhost` PROCEDURE IF NOT EXISTS compartilharArquivo" +
+                    " (IN ownerID INT, IN tipoConfirm VARCHAR(100), IN nomeConfirm VARCHAR(100), IN targetlogin VARCHAR(100))" +
+                    "BEGIN " +
+                    "DECLARE checkOwner INT; " +
+                    "DECLARE checkTarget INT; " +
+                    "DECLARE checkRepeated INT; " +
+                    "DECLARE id_arq INT; " +
+                    "DECLARE id_target INT; " +
+                    "SET checkOwner = (SELECT EXISTS (SELECT * FROM Arquivo a LEFT JOIN Usuario u on (a.id_dono = u.id) WHERE (id_dono = ownerID) ) AS result); " +
+                    "if checkOwner = 0 then " +
+                    "signal sqlstate '45000' set message_text = 'Erro : Nao e dono do arquivo!'; " +
+                    "end if; " +
+                    "if checkOwner = 1 then " +
+                    "SET id_arq = (SELECT id from Arquivo WHERE (id_dono = ownerID) AND (nome = nomeConfirm) AND (tipo = tipoConfirm)); " +
+    
+                    "SET checkTarget = (SELECT EXISTS (SELECT * from Usuario where (login = targetlogin)) as result); " +
+                    "if checkTarget = 0 then " +
+                    "signal sqlstate '45000' set message_text = 'Erro : Usuario com qual compartilhar nao existe!'; " +
+                    "end if; " +
+                    "if checkTarget = 1 then " +
+                    "SET id_target = (SELECT id from Usuario WHERE (login = targetlogin)); " + // clear
+    
+                    "SET checkRepeated = (SELECT EXISTS (SELECT * FROM Compartilhamento WHERE (id_usuario_compartilhado = id_target) AND (id_arquivo = id_arq)) AS result); " +
+                    "if checkRepeated = 1 then " +
+                    "signal sqlstate '45000' set message_text = 'Erro : Compartilho com o usuario ja foi feito!'; " +
+                    "end if; " +
+                    "if checkRepeated = 0 then " +
+                    "INSERT INTO Compartilhamento (id_dono, id_arquivo, id_usuario_compartilhado, data) VALUES (ownerID, id_arq, id_target, CURDATE() ); " +
+                    "end if; " +
+                    "end if; " +
+                    "end if; " +
+                    "END"
+            );
+            stmt.execute("GRANT EXECUTE ON PROCEDURE webdriver.compartilharArquivo to usuario;");
+            stmt.execute("GRANT EXECUTE ON PROCEDURE webdriver.compartilharArquivo to admin;");
+    
+            stmt.execute("INSERT INTO Plano (nome, duracao, limite_users) VALUES ('Plano_Default', '2030-10-10', 100000000)");
+    
+    
+        }
+    
+        catch ( SQLException e ) { e.printStackTrace(); resultado = false; }
+    
+        return resultado;
     }
-
-    catch ( SQLException e ) { e.printStackTrace(); resultado = false; }
-
-    return resultado;
-}
 
 
 static void criarUsuario(Connection connection, Scanner scan) // conteudo aqui e um placeholder temporario
