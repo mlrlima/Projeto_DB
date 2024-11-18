@@ -7,10 +7,6 @@ import java.util.Scanner;
 public class root 
 {
 
-static void opcoes()
-{
-    System.out.print("\n\n---------------------------\nOpcoes :\n1- ver todos os usuarios\n2- inserir usuario\n4- remover usuario\n5- alterar dados de um usuario\n6- dar privilegios de admin para um usuario\n50- resetar database\n\n>>>");
-}
 
 static boolean resetarDatabase(Connection connection)
 {
@@ -19,6 +15,12 @@ static boolean resetarDatabase(Connection connection)
     try 
     {
         stmt = connection.createStatement();
+
+        stmt.execute("DROP ROLE IF EXISTS admin;");
+        stmt.execute("flush privileges;");
+        stmt.execute("CREATE ROLE admin;");
+
+
         stmt.execute("DROP DATABASE IF EXISTS webdriver;");
         stmt.execute("CREATE DATABASE webdriver;");
         stmt.execute("use webdriver;");
@@ -31,6 +33,7 @@ static boolean resetarDatabase(Connection connection)
         "duracao TIME," + 
         "limite_users INT);"
         );
+        stmt.execute("GRANT ALL PRIVILEGES on webdriver.Plano to admin;");
 
         stmt.execute
         (
@@ -45,12 +48,14 @@ static boolean resetarDatabase(Connection connection)
         "CONSTRAINT fk_plano_id " +
         "FOREIGN KEY (plano_id) REFERENCES Plano(id) ON DELETE RESTRICT ON UPDATE RESTRICT);" 
         );
+        stmt.execute("GRANT ALL PRIVILEGES on webdriver.instituicao to admin;");
 
         stmt.execute
         (
         "CREATE TABLE Administrador" +
         "(id INT PRIMARY KEY NOT NULL);" 
         );
+        stmt.execute("GRANT ALL PRIVILEGES on webdriver.Administrador to admin;");
 
         stmt.execute(
         "CREATE TABLE Usuario (" +
@@ -65,6 +70,7 @@ static boolean resetarDatabase(Connection connection)
         "FOREIGN KEY (id_instituicao) REFERENCES instituicao(id)," +
         "FOREIGN KEY (id_admin) REFERENCES Administrador(id)" +
         ");");
+        stmt.execute("GRANT ALL PRIVILEGES on webdriver.Usuario to admin;");
 
 
         stmt.execute
@@ -83,6 +89,7 @@ static boolean resetarDatabase(Connection connection)
     
         "FOREIGN KEY (id_dono) REFERENCES Usuario(id) ON DELETE CASCADE" +");"    
         ); 
+        stmt.execute("GRANT ALL PRIVILEGES on webdriver.Arquivo to admin;");
 
         stmt.execute
         (  
@@ -95,6 +102,7 @@ static boolean resetarDatabase(Connection connection)
         "FOREIGN KEY (id_admin) REFERENCES Administrador(id) ON DELETE CASCADE" + 
         ");"
         ); 
+        stmt.execute("GRANT ALL PRIVILEGES on webdriver.Resposta to admin;");
 
         stmt.execute
         (
@@ -110,6 +118,7 @@ static boolean resetarDatabase(Connection connection)
         "FOREIGN KEY (id_usuario) REFERENCES Usuario(id) ON DELETE CASCADE," +
         "FOREIGN KEY (id_resposta) REFERENCES Resposta(id_resposta) ON DELETE CASCADE" +
         ");");
+        stmt.execute("GRANT ALL PRIVILEGES on webdriver.Suporte to admin;");
 
         stmt.execute("create table Comentario("+
                 "id INT PRIMARY KEY NOT NULL AUTO_INCREMENT," +
@@ -121,6 +130,8 @@ static boolean resetarDatabase(Connection connection)
                 + "FOREIGN KEY (id_arquivo) REFERENCES Arquivo(id) ON DELETE CASCADE,"
                 + "FOREIGN KEY (id_autor) REFERENCES Usuario(id) ON DELETE CASCADE);"
             );
+            stmt.execute("GRANT ALL PRIVILEGES on webdriver.Comentario to admin;");
+        
         stmt.execute("create table Compartilhamento("+
         	"id INT PRIMARY KEY NOT NULL AUTO_INCREMENT," +
                 "id_dono INT, "+
@@ -131,6 +142,7 @@ static boolean resetarDatabase(Connection connection)
                 + "FOREIGN KEY (id_arquivo) REFERENCES Arquivo(id) ON DELETE CASCADE,"
                 + "FOREIGN KEY(id_usuario_compartilhado) REFERENCES Usuario(id) ON DELETE CASCADE);"
             );
+        stmt.execute("GRANT ALL PRIVILEGES on webdriver.Compartilhamento to admin;");
 
         stmt.execute("create table Versionamento("+
         	"id INT PRIMARY KEY NOT NULL AUTO_INCREMENT," +
@@ -143,6 +155,14 @@ static boolean resetarDatabase(Connection connection)
                 "FOREIGN KEY (id_autor) REFERENCES Usuario(id) ON DELETE SET NULL, " +
                 "FOREIGN KEY (id_arquivo) REFERENCES Arquivo(id) ON DELETE CASCADE); "
             );
+            stmt.execute("GRANT ALL PRIVILEGES on webdriver.Versionamento to admin;");
+
+            stmt.execute("create table Atividades_recentes("+
+        	    "id_arquivo INT," +
+                "data DATE," +
+                "acesso TINYINT," +
+                "FOREIGN KEY (id_arquivo) REFERENCES Arquivo(id) ON DELETE CASCADE); "
+            );
 
 
 
@@ -153,13 +173,16 @@ static boolean resetarDatabase(Connection connection)
         stmt.execute("CREATE ROLE usuario;");
         stmt.execute("GRANT INSERT on webdriver.Arquivo to usuario;");
         //stmt.execute("GRANT INSERT, UPDATE, DELETE on webdriver.Compartilhamento to usuario;");
-        stmt.execute("GRANT INSERT, UPDATE, DELETE on webdriver.Suporte to usuario;");
+        //stmt.execute("GRANT INSERT, UPDATE, DELETE on webdriver.Suporte to usuario;");
+        stmt.execute("GRANT INSERT on webdriver.Suporte to usuario;");
         stmt.execute("GRANT INSERT on webdriver.Comentario to usuario;");
 
-        stmt.execute("DROP ROLE IF EXISTS admin;");
-        stmt.execute("flush privileges;");
-        stmt.execute("CREATE ROLE admin;");
-        stmt.execute("GRANT ALL PRIVILEGES on webdriver.* to admin;");
+        //stmt.execute("DROP ROLE IF EXISTS admin;");
+        //stmt.execute("flush privileges;");
+        //stmt.execute("CREATE ROLE admin;");
+        //stmt.execute("GRANT ALL PRIVILEGES on webdriver.* to admin;");
+
+        
 
 
     /// functions
@@ -176,13 +199,32 @@ static boolean resetarDatabase(Connection connection)
     "create function echoInt() returns INT return @echoInt;"
     );
 
-    /// views
+
+    stmt.execute("DROP FUNCTION IF EXISTS maisQueCemDias");
+    stmt.execute
+    (
+    "create function maisQueCeMDias(input INT) returns TINYINT " +
+    "BEGIN " +
+    "DECLARE data_arquivo DATE; " +
+    "DECLARE diferenca INT; " +
+    "SET data_arquivo = (SELECT data from Atividades_recentes WHERE (id_arquivo = input) ); " +
+    "SET diferenca = (DATEDIFF(CURDATE(), data_arquivo)); " +
+    "if diferenca > 100 then  " +
+    "RETURN 1; " +
+    "end if; " +
+    "if diferenca <= 100 then  " +
+    "RETURN 0; " +
+    "end if; " +
+    "END"
+    );
+
     
     stmt.execute("DROP VIEW IF EXISTS getUserInfo");
     stmt.execute("CREATE SQL SECURITY DEFINER VIEW getUserInfo AS  "+
     "select id, id_admin, email, data_ingresso, id_instituicao FROM Usuario where login = echoVarchar(); "
     );
     stmt.execute("GRANT SELECT on webdriver.getUserInfo to usuario;");
+    stmt.execute("GRANT SELECT on webdriver.getUserInfo to admin;");
 
 
     stmt.execute("DROP VIEW IF EXISTS verMeusSuportes");
@@ -190,28 +232,23 @@ static boolean resetarDatabase(Connection connection)
     "select s.descricao, s.data, s.hora, s.status, r.descricao as resposta FROM Suporte s LEFT JOIN Resposta r on(s.id_resposta = r.id_resposta) where id_usuario = echoInt()  ; "
     );
     stmt.execute("GRANT SELECT on webdriver.verMeusSuportes to usuario;");
+    stmt.execute("GRANT SELECT on webdriver.verMeusSuportes to admin;");
 
     stmt.execute("DROP VIEW IF EXISTS verMeusArquivos");
     stmt.execute("CREATE SQL SECURITY DEFINER VIEW verMeusArquivos AS  "+
     "select a.conteudo, a.nome, a.tipo, a.permissoes, a.data_alteracao, a.tamanho, a.url FROM Arquivo a LEFT JOIN Usuario u on (a.id_dono = u.id) where id_dono = echoInt(); "
     );
     stmt.execute("GRANT SELECT on webdriver.verMeusArquivos to usuario;");
+    stmt.execute("GRANT SELECT on webdriver.verMeusArquivos to admin;");
 
     stmt.execute("DROP VIEW IF EXISTS arquivosCompartilhadosComigo");
     stmt.execute("CREATE SQL SECURITY DEFINER VIEW arquivosCompartilhadosComigo AS  "+
     "select a.conteudo, a.nome, a.tipo, a.data_alteracao, a.tamanho, a.url, u.login FROM Arquivo a LEFT JOIN Usuario u on (u.id = a.id_dono) LEFT JOIN Compartilhamento c on (a.id = c.id_arquivo) where id_usuario_compartilhado = echoInt(); "
     );
     stmt.execute("GRANT SELECT on webdriver.arquivosCompartilhadosComigo to usuario;");
+    stmt.execute("GRANT SELECT on webdriver.arquivosCompartilhadosComigo to admin;");
 
-    //stmt.execute("DROP VIEW IF EXISTS verVersionamento");
-    //stmt.execute("CREATE SQL SECURITY DEFINER VIEW verVersionamento AS  "+
-    //"select v.conteudo, v.data, v.hora, v.operacao, u.login FROM Versionamento v LEFT JOIN Usuario u on(v.id_autor = u.id) where id_arquivo = echoInt()  ; "
-    //);
-    //stmt.execute("GRANT SELECT on webdriver.verVersionamento to usuario;");
-    // portal3
 
- 
-    /// triggers
     
 
     stmt.execute
@@ -224,6 +261,33 @@ static boolean resetarDatabase(Connection connection)
         "end if; "+
         "END"
     );
+
+    stmt.execute
+    (
+        "CREATE DEFINER=`root`@`localhost` TRIGGER IF NOT EXISTS arquivo_duplicado "+
+        "BEFORE INSERT ON Arquivo FOR EACH ROW " +
+        "BEGIN " +
+        "DECLARE checkDuplicado INT; " +
+        "SET checkDuplicado = ( SELECT EXISTS ( select * from Arquivo WHERE (nome = new.nome) AND (tipo = new.tipo) AND (id_dono = new.id_dono) ) ); " +
+        "if checkDuplicado = 1 then " +
+        "signal sqlstate '45000' set message_text = 'Erro : Voce ja tem um arquivo com o mesmo nome e tipo!'; " +
+        "end if; "+
+        "END"
+    );
+
+    // SET checkPerm = ( SELECT EXISTS ( SELECT a.id from Arquivo a INNER JOIN Compartilhamento c on (a.id = c.id_arquivo) AND (a.id_dono = c.id_dono) WHERE (a.nome = nomeConfirm) AND (a.tipo = tipoConfirm) ) AS result); " +
+
+    stmt.execute
+    (
+        "CREATE DEFINER=`root`@`localhost` TRIGGER IF NOT EXISTS auto_compartilhamento "+
+        "BEFORE INSERT ON Compartilhamento FOR EACH ROW " +
+        "BEGIN " +
+        "if new.id_dono = new.id_usuario_compartilhado then " +
+        "signal sqlstate '45000' set message_text = 'Erro : Nao pode compartilhar arquivo com si mesmo!'; " +
+        "end if; "+
+        "END"
+    );
+
 
     stmt.execute
     (
@@ -247,6 +311,51 @@ static boolean resetarDatabase(Connection connection)
         "INSERT INTO Versionamento (conteudo, data, hora, operacao, id_autor, id_arquivo) VALUES (new.conteudo, CURDATE(), CURTIME(), 2, targetID, new.id); " +
         "END"
     );
+
+    stmt.execute
+    (
+        "CREATE DEFINER=`root`@`localhost` TRIGGER IF NOT EXISTS registrar_Criacao "+
+        "AFTER INSERT ON Arquivo FOR EACH ROW " +
+        "BEGIN " +
+        "INSERT INTO Atividades_recentes (id_arquivo, data, acesso) VALUES (new.id, new.data_alteracao, 1); " +
+        "END"
+    );
+
+    stmt.execute
+    (
+        "CREATE DEFINER=`root`@`localhost` TRIGGER IF NOT EXISTS registrar_Alteracao "+
+        "AFTER UPDATE ON Arquivo FOR EACH ROW " +
+        "BEGIN " +
+        "UPDATE Atividades_recentes SET data = new.data_alteracao WHERE id_arquivo = new.id; " +
+        "END"
+    );
+
+
+    stmt.execute("CREATE DEFINER=`root`@`localhost` PROCEDURE IF NOT EXISTS Chavear" + 
+    "(IN input INT) " +
+    "BEGIN " +
+    "DECLARE resultado TINYINT; " +
+    "SET resultado = ( SELECT acesso FROM Atividades_recentes WHERE (id_arquivo = input) ); " +
+    "if resultado = 1 then " +
+    "UPDATE Atividades_recentes SET acesso = 0 WHERE id_arquivo = input; " +
+    "end if; " +
+    "if resultado = 0 then " +
+    "UPDATE Atividades_recentes SET acesso = 1 WHERE id_arquivo = input; " +
+    "end if; " +
+    "END"
+    );
+
+    stmt.execute("CREATE DEFINER=`root`@`localhost` PROCEDURE IF NOT EXISTS Atualizar_acessos()" + 
+    "BEGIN " +
+
+    "UPDATE Atividades_recentes " +
+    " SET acesso = 0 WHERE (acesso = 1) AND (maisQueCemDias(id_arquivo) = 1); " +
+
+    "UPDATE Atividades_recentes " +
+    " SET acesso = 1 WHERE (acesso = 0) AND (maisQueCemDias(id_arquivo) = 0); " +
+    "END"
+    );
+
 
 
     /// procedures
@@ -298,7 +407,6 @@ static boolean resetarDatabase(Connection connection)
     "SET result = ( SELECT a.id FROM Arquivo a LEFT JOIN Usuario u on (a.id_dono = u.id) WHERE (id_dono = hostID) AND (tipo = tipoConfirm) AND (nome = nomeConfirm) ); " +
     "END"
     );
-    // portal1
 
     stmt.execute("CREATE DEFINER=`root`@`localhost` PROCEDURE IF NOT EXISTS getQtdCompartilhamentos" +
    "(IN ownerid INT, in nomeConfirm VARCHAR(100), IN tipoConfirm VARCHAR(100), OUT result INT) " +
@@ -308,6 +416,7 @@ static boolean resetarDatabase(Connection connection)
    "END"
    );
    stmt.execute("GRANT EXECUTE ON PROCEDURE webdriver.getQtdCompartilhamentos to usuario;");
+   stmt.execute("GRANT EXECUTE ON PROCEDURE webdriver.getQtdCompartilhamentos to admin;");
 
 
    stmt.execute("CREATE DEFINER=`root`@`localhost` PROCEDURE IF NOT EXISTS Remover_Acessos" +
@@ -318,6 +427,7 @@ static boolean resetarDatabase(Connection connection)
    "END"
    );
    stmt.execute("GRANT EXECUTE ON PROCEDURE webdriver.Remover_Acessos to usuario;");
+   stmt.execute("GRANT EXECUTE ON PROCEDURE webdriver.Remover_Acessos to admin;");
 
 
    stmt.execute("CREATE DEFINER=`root`@`localhost` PROCEDURE IF NOT EXISTS Remover_Arquivo" +
@@ -328,6 +438,7 @@ static boolean resetarDatabase(Connection connection)
    "END"
    );
    stmt.execute("GRANT EXECUTE ON PROCEDURE webdriver.Remover_Arquivo to usuario;");
+   stmt.execute("GRANT EXECUTE ON PROCEDURE webdriver.Remover_Acessos to admin;");
 
 
    stmt.execute("CREATE DEFINER=`root`@`localhost` PROCEDURE IF NOT EXISTS Atualizar_Arquivo" +
@@ -338,6 +449,7 @@ static boolean resetarDatabase(Connection connection)
    "END"
    );
    stmt.execute("GRANT EXECUTE ON PROCEDURE webdriver.Atualizar_Arquivo to usuario;");
+   stmt.execute("GRANT EXECUTE ON PROCEDURE webdriver.Atualizar_Arquivo to admin;");
 
 
    stmt.execute("CREATE DEFINER=`root`@`localhost` PROCEDURE IF NOT EXISTS CriarComentario" +
@@ -348,6 +460,8 @@ static boolean resetarDatabase(Connection connection)
    "END" 
    );
    stmt.execute("GRANT EXECUTE ON PROCEDURE webdriver.CriarComentario to usuario;");
+   stmt.execute("GRANT EXECUTE ON PROCEDURE webdriver.CriarComentario to admin;");
+   
 
    stmt.execute("CREATE DEFINER=`root`@`localhost` PROCEDURE IF NOT EXISTS verComentarios" +
    "(IN userid INT, in nomeConfirm VARCHAR(100), IN tipoConfirm VARCHAR(100) ) " +
@@ -357,6 +471,7 @@ static boolean resetarDatabase(Connection connection)
    "END"
    );
    stmt.execute("GRANT EXECUTE ON PROCEDURE webdriver.verComentarios to usuario;");
+   stmt.execute("GRANT EXECUTE ON PROCEDURE webdriver.verComentarios to admin;");
 
 
    stmt.execute("CREATE DEFINER=`root`@`localhost` PROCEDURE IF NOT EXISTS verVersionamento" +
@@ -367,8 +482,7 @@ static boolean resetarDatabase(Connection connection)
    "END"
    );
    stmt.execute("GRANT EXECUTE ON PROCEDURE webdriver.verVersionamento to usuario;");
-   // portal 5
-
+   stmt.execute("GRANT EXECUTE ON PROCEDURE webdriver.verVersionamento to admin;");
 
 
 
@@ -407,6 +521,7 @@ static boolean resetarDatabase(Connection connection)
                 "END"
         );
         stmt.execute("GRANT EXECUTE ON PROCEDURE webdriver.compartilharArquivo to usuario;");
+        stmt.execute("GRANT EXECUTE ON PROCEDURE webdriver.compartilharArquivo to admin;");
 
     }
 
@@ -648,6 +763,54 @@ static void alterarDadosInstituicao(Connection connection, Scanner scan) {
         }
     }
 
+static void atividades_recentes(Connection connection, Scanner scan)
+{
+    int menu = 10;
+    int check = 0;
+    try
+    {
+    Statement stmt = connection.createStatement();
+    CallableStatement cstmt;
+    ResultSet result;
+    do 
+    {
+    check = 0;
+
+    result = stmt.executeQuery("SELECT * from Atividades_recentes");
+    while (result.next())
+    {
+        check++;
+        System.out.print("\n----------------------------\n");
+        System.out.print("ID do arquivo : " + result.getInt("id_arquivo") + "\n");
+        System.out.print("Acesso : ");
+        if (result.getShort("acesso") == 1 ) { System.out.print("Prioritario\n"); }
+        if (result.getShort("acesso") == 0 ) { System.out.print("Nao prioritario\n"); }
+        System.out.print("Data :" + result.getDate("data").toString() );
+    }
+    if (check == 0) { return; }
+    System.out.print("\n----------------------------\n\n");
+    System.out.print("[1] atualizar acessos automaticamente\n[2] chavear arquivo especifico \n[0] voltar \n\n >>>");
+
+    try {menu = scan.nextInt(); } catch (InputMismatchException e) { scan.next(); menu = 10; } 
+    
+    switch (menu)
+    {
+        case 1 : cstmt = connection.prepareCall("{ call Atualizar_acessos()}"); cstmt.execute(); break;
+
+        case 2 : System.out.print("Digite o id a inverter o acesso :\n\n >>>");
+                    try {menu = scan.nextInt();  
+                        cstmt = connection.prepareCall("{ call Chavear(?)}");
+                        cstmt.setInt(1, menu);
+                        cstmt.execute();
+                    }
+                    catch (InputMismatchException e) { scan.next(); menu = 10; } 
+                    break;
+    }
+
+    } while (menu != 0);
+    } catch (SQLException e) { e.printStackTrace(); }
+}
+
 
 static void teste(Connection connection)
 {
@@ -722,9 +885,13 @@ Integer num;
             grantAdmin(connection, scan);
             break;
 
-        case 8: 
-            teste(connection);
+        case 7:
+            atividades_recentes(connection, scan);
             break;
+
+        //case 8: 
+            //teste(connection);
+            //break;
         
 
         case 50: 
@@ -744,4 +911,10 @@ Integer num;
 scan.close();
 
 }
+
+static void opcoes()
+{
+    System.out.print("\n\n---------------------------\nOpcoes :\n1- ver todos os usuarios\n2- inserir usuario\n4- remover usuario\n5- alterar dados de um usuario\n6- dar privilegios de admin para um usuario\n7- tabela de atividades recentes\n50- resetar database\n\n>>>");
+}
+
 }
