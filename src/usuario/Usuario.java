@@ -3,7 +3,7 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.InputMismatchException;
 import java.util.Scanner;
-@SuppressWarnings("unused")
+
 
 public class Usuario
 {
@@ -51,7 +51,7 @@ public class Usuario
         int menu = 10;
         do
         {
-            System.out.print("\n\n------------------------\n O que voce quer fazer agora?\n\n [1] - ver perfil\n [2] - ver arquivos\n [4] - suporte\n [0] - sair\n\n   >>>");
+            System.out.print("\n\nBem vindo, "+this.login+"\n------------------------\n O que voce quer fazer agora?\n\n [1] - ver perfil\n [2] - ver arquivos\n [3] - suporte\n [0] - sair\n\n   >>>");
             try {menu = scan.nextInt(); } 
 		    catch (InputMismatchException e)
 		    { scan.next(); menu = 10; }
@@ -60,7 +60,7 @@ public class Usuario
             {   
                 case 1 : perfil(scan); break;
                 case 2 : MenuArquivo arquivo = new MenuArquivo(this); arquivo.menu(scan, connection); break;
-                case 4 : menuSuporte(scan, connection); break;
+                case 3 : menuSuporte(scan, connection); break;
                 case 0 : System.out.print("\n   :(\n"); break;
                 default: System.out.print("\n Entrada invalida!\n"); menu = 10; break;
             }
@@ -73,7 +73,7 @@ public class Usuario
         int menu = 10;
         do
         {
-            System.out.print("\n\nSuporte\n------------------------\n\n [1] - criar novo ticket de suporte\n [2] - ver meus tickets\n [0] - sair\n\n   >>>");
+            System.out.print("\n\nSuporte\n------------------------\n\n [1] - criar novo ticket de suporte\n [2] - ver meus tickets\n [0] - voltar\n\n   >>>");
             try {menu = scan.nextInt(); } 
 		    catch (InputMismatchException e)
 		    { scan.next(); menu = 10; }
@@ -92,7 +92,7 @@ public class Usuario
     private void perfil(Scanner scan)
     {
         scan.nextLine();
-        System.out.print("\n\n\n------------------------ ");
+        System.out.print("\n\n\nPerfil\n------------------------ ");
         System.out.print("\nID : " + this.id);
         System.out.print("\nLogin : " + this.login);
         System.out.print("\nEmail : " + this.email);
@@ -168,7 +168,7 @@ public class Usuario
             hora = result.getTime("hora").toString();
             status = result.getInt("status");
             if (status == 0) { resposta = "0"; }
-            else {resposta = result.getString("resposta"); } // WIP : depois tenq ser um query pra pegar a resposta
+            else {resposta = result.getString("resposta"); } 
 
             suporte = new Suporte();
             suporte.conteudo = descricao; suporte.data = data; suporte.hora = hora; suporte.status = status; suporte.resposta = resposta;
@@ -267,7 +267,7 @@ public class Usuario
         int menu = 10;
         do
         {
-            System.out.print("\n\n------------------------\n Menu admin\n\n [1] - ver pedidos de suporte nao-respondidos\n [0] - sair\n\n >>>");
+            System.out.print("\n\n------------------------\n Menu admin\n\n [1] - ver pedidos de suporte nao-respondidos\n [0] - voltar\n\n >>>");
             try {menu = scan.nextInt(); } 
 		    catch (InputMismatchException e)
 		    { scan.next(); menu = 10; }
@@ -287,7 +287,7 @@ public class Usuario
         ArrayList<Suporte> suportes = new ArrayList<>();
         Suporte suporte;
         String descricao, hora, data;
-        int status, id;
+        int id;
 
         try
         {
@@ -365,7 +365,6 @@ public class Usuario
                         ResultSet result  = stmt.executeQuery("SELECT MAX(id_resposta) from Resposta;");
                         result.next();
 
-                       // stmt.execute("UPDATE Usuario SET login = '" + login + "' WHERE (id = " + id + ");");
                         stmt.execute("UPDATE Suporte SET id_resposta =" + result.getInt(1) + " WHERE (id = " + suportes.get(target-1).id + ")");
                         stmt.execute("UPDATE Suporte SET status = 1 WHERE (id = " + suportes.get(target-1).id + ")");
 
