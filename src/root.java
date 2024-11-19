@@ -245,7 +245,6 @@ static boolean resetarDatabase(Connection connection)
     stmt.execute("DROP VIEW IF EXISTS getUserInfo");
     stmt.execute("CREATE SQL SECURITY DEFINER VIEW getUserInfo AS  "+
     "select u.id, u.id_admin, u.email, u.data_ingresso, i.nome FROM Usuario u LEFT JOIN Instituicao i on (u.id_instituicao = i.id) where u.login = echoVarchar(); "
-    //  "select id, id_admin, email, data_ingresso, id_instituicao FROM Usuario where login = echoVarchar(); "
     );
     stmt.execute("GRANT SELECT on webdriver.getUserInfo to usuario;");
     stmt.execute("GRANT SELECT on webdriver.getUserInfo to admin;");
@@ -480,17 +479,6 @@ static boolean resetarDatabase(Connection connection)
     " SET acesso = 1 WHERE (acesso = 0) AND (maisQueCemDias(id_arquivo) = 0); " +
     "END"
     );
-
-    //stmt.execute
-    //(
-    //    "CREATE DEFINER=`root`@`localhost` TRIGGER IF NOT EXISTS registrar_Criacao "+
-    //    "AFTER INSERT ON Arquivo FOR EACH ROW " +
-   //     "BEGIN " +
-   //     "INSERT INTO Atividades_recentes (id_arquivo, data, acesso) VALUES (new.id, new.data_alteracao, 1); " +
-   //     "END"
-   // );
-
-
 
 
 
