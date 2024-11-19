@@ -53,6 +53,23 @@ public class login_instituicao
             catch (SQLException e ) { menu = -2; }
             break;
 
+            case 2 :
+            System.out.print("\n\n                                   ~SOBRE~");
+            System.out.print("\n       ____________________________________________________________       \n\n");
+            System.out.print("          Trabalho feito por :\n\n");
+            System.out.print("          Matheus Veríssimo\n");
+            System.out.print("          Maria Luiza\n");
+            System.out.print("          Vinicius martins\n");
+            System.out.print("          Victor Hugo\n");
+            System.out.print("          Roberto Regis\n");
+            System.out.print("\n\n          18/11/2024 ");
+            System.out.print("\n       ____________________________________________________________       \n\n");
+            scan.nextLine();
+            System.out.print("          Aperte Enter para voltar.\n\n");
+            System.out.print("          >>>");
+            scan.nextLine();
+            break;
+
             case 0 : return; 
 
             default : menu = -1; break;
