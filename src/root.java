@@ -165,6 +165,15 @@ static boolean resetarDatabase(Connection connection)
                 "FOREIGN KEY (id_arquivo) REFERENCES Arquivo(id) ON DELETE CASCADE); "
             );
 
+            stmt.execute("create table Registro_operacoes("+
+            "id INT PRIMARY KEY NOT NULL AUTO_INCREMENT," +
+            "data DATE," +
+            "hora TIME," +
+            "id_arquivo INT," +
+            "operacao INT, "+
+            "id_autor INT, "+
+            "id_alvo INT DEFAULT NULL ); "
+            );
 
 
     //// coisas de pessoas e roles 
@@ -418,6 +427,32 @@ static boolean resetarDatabase(Connection connection)
     "END"
     );
 
+    stmt.execute
+    (
+        "CREATE DEFINER=`root`@`localhost` TRIGGER IF NOT EXISTS log_operacoes_versionamento "+
+        "AFTER INSERT ON Versionamento FOR EACH ROW " +
+        "BEGIN " +
+        "INSERT INTO Registro_operacoes (data, hora, id_arquivo, operacao, id_autor) VALUES (new.data, new.hora, new.id_arquivo, new.operacao, new.id_autor) ; " +
+        "END"
+    );
+
+    stmt.execute
+    (
+        "CREATE DEFINER=`root`@`localhost` TRIGGER IF NOT EXISTS log_remover_arquivo "+
+        "AFTER DELETE ON Arquivo FOR EACH ROW " +
+        "BEGIN " +
+        "INSERT INTO Registro_operacoes (data, hora, id_arquivo, operacao, id_autor) VALUES (CURDATE(), CURTIME(), old.id, 3, old.id_dono) ; " +
+        "END"
+    );
+
+    stmt.execute
+    (
+        "CREATE DEFINER=`root`@`localhost` TRIGGER IF NOT EXISTS log_operacoes_compartilhamento "+
+        "AFTER INSERT ON Compartilhamento FOR EACH ROW " +
+        "BEGIN " +
+        "INSERT INTO Registro_operacoes (data, hora, id_arquivo, operacao, id_autor, id_alvo) VALUES (new.data, CURTIME(), new.id_arquivo, 4, new.id_dono, new.id_usuario_compartilhado) ; " +
+        "END"
+    );
 
 
     /// procedures
