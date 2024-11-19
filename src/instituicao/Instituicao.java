@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.InputMismatchException;
 import java.util.Scanner;
 
-import usuario.MenuArquivo;
 
 @SuppressWarnings("unused")
 
@@ -89,7 +88,6 @@ public class Instituicao
             System.out.println("Nome : " + result.getString("nome"));
             System.out.println("Dura ate : " + result.getDate("duracao").toString());
             System.out.println("Limite de usuarios : " + result.getInt("limite_users"));
-         // result = stmt.executeQuery("SELECT descricao, data, hora, status, resposta FROM (select @echoInt:="+this.id+" p) parametro, verMeusSuportes;");
 
         } catch (SQLException e ) { e.printStackTrace(); }
 
@@ -103,7 +101,7 @@ public class Instituicao
         Arquivo arquivo;
         arquivos = arquivoQuery(connection);
 
-        int retorno;
+
         int menu = 10;
 
         do
@@ -175,7 +173,7 @@ public class Instituicao
                 data_alteracao = result.getDate("data_alteracao").toString();
                 tamanho = result.getInt("tamanho");
                 url = result.getString("url");
-                dono_login = result.getString("login"); //
+                dono_login = result.getString("login"); 
 
                 arquivo = new Arquivo();
                 arquivo.conteudo = conteudo; arquivo.nome = nome; arquivo.tipo = tipo; arquivo.permissoes = permissoes; arquivo.data_alteracao = data_alteracao; arquivo.tamanho = tamanho; arquivo.url = url;
@@ -363,7 +361,6 @@ public class Instituicao
         
         Statement stmt = connection.createStatement();
         ResultSet result;
-        // result = stmt.executeQuery("SELECT id, causa_social, endereco, data_aquisicao, plano_id from (select @echoVarChar:='"+this.nome+"' p) parametro, getInstituicaoInfo;");
         result = stmt.executeQuery("select login, email, senha, data_ingresso from (select @echoInt:= '"+this.id+"' p) parametro, verMembrosInstituicao; ");
 
         while (result.next())
@@ -421,4 +418,3 @@ public class Instituicao
     }
 
 }
-
