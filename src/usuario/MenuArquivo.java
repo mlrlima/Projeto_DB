@@ -3,7 +3,6 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.InputMismatchException;
 import java.util.Scanner;
-import java.util.concurrent.Callable;
 
 @SuppressWarnings("unused")
 
@@ -11,7 +10,7 @@ public class MenuArquivo
 {
     Usuario user;
 
-    public MenuArquivo (Usuario user) // construtor
+    public MenuArquivo (Usuario user) 
     {
         this.user = user;
     }
@@ -21,9 +20,9 @@ public class MenuArquivo
         int menu = 10;
         do
         {
-            System.out.print("\n\n------------------------\n O que voce quer fazer agora?\n\n [1] - criar arquivo\n [2] - meus arquivos\n [3] - ver arquivos compartilhados comigo\n");
-            if (this.user.instituicao != null) {System.out.print(" [4] - ver arquivos compartilhados com a instituicao\n"); } //[4] - ver arquivos compartilhados com a instituicao\n [0] - sair\n\n   >>>");
-            System.out.print(" [0] - sair\n\n   >>>");
+            System.out.print("\n\nMenu de arquivos\n------------------------\n O que voce quer fazer agora?\n\n [1] - criar arquivo\n [2] - meus arquivos\n [3] - ver arquivos compartilhados comigo\n");
+            if (this.user.instituicao != null) {System.out.print(" [4] - ver arquivos compartilhados com a instituicao\n"); } 
+            System.out.print(" [0] - voltar\n\n   >>>");
             try {menu = scan.nextInt(); } 
 		    catch (InputMismatchException e)
 		    { scan.next(); menu = 10; }
@@ -70,7 +69,7 @@ public class MenuArquivo
                     if (arquivo.permissoes == 0) {System.out.print("privado\n");}
                     else {System.out.print("compartilhado\n");}
                     System.out.print("tamanho : " + arquivo.tamanho + " bytes\n");
-                    //System.out.print("Status : ");
+                    
                 }
                 System.out.print("------------------------\n");
                 System.out.print("\n\n Selecione o arquivo que voce quer ver, ou [0] para voltar.\n\n >>>");
@@ -185,7 +184,7 @@ public class MenuArquivo
                 else { System.out.print("\n Entrada invalida!\n"); menu = 10; }
         } while (menu != 0);
     }
-    // portal
+  
 
     private ArrayList<Comentario> comentarioQuery(Connection connection, Arquivo arquivo)
     {
@@ -356,7 +355,6 @@ public class MenuArquivo
     private int verArquivo(int contexto, Arquivo arquivo, Connection connection, Scanner scan)
     {
         int menu = 10;
-        String input;
         int retorno = 1; // 1 -> nao precisa atualizar lista de arquivos, 0 -> mudou algo
 
     switch (contexto){ 
@@ -373,7 +371,7 @@ public class MenuArquivo
                  cstmt.setString(2, arquivo.nome);
                  cstmt.setString(3, arquivo.tipo);
                  cstmt.registerOutParameter(4, Types.INTEGER);
-                            //                                         call getQtdCompartilhamentos(1, 'teste', 'bin', @result);
+
                 cstmt.execute();
                 System.out.print("Quantidade de compartilhamentos : " + cstmt.getInt(4) + "\n\n");
 
@@ -609,7 +607,7 @@ public class MenuArquivo
     private void criarArquivo(Scanner scan, Connection connection){
         Statement stmt;
         try{
-            scan.nextLine(); // pra comer o line break nextint passado
+            scan.nextLine(); 
             stmt = connection.createStatement();
             PreparedStatement prep = connection.prepareStatement("INSERT INTO Arquivo (nome, permissoes, conteudo, tipo, tamanho, data_alteracao, url, id_dono, localizacao) VALUE (?,?,?,?,?,?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
             System.out.print("\nDigite o nome do arquivo:\n>>> ");
@@ -715,8 +713,6 @@ public class MenuArquivo
         String url;
 
         String dono_login;
-
-        // "select a.conteudo, a.tipo, a.permissoes, a.data_alteracao, a.tamanho, a.url FROM Arquivo a LEFT JOIN Usuario u on (a.id_dono = u.id) where id_dono = echoInt(); "
 
     }
 
