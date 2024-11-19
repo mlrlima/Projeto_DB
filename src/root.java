@@ -2,8 +2,6 @@ import java.sql.*;
 import java.util.InputMismatchException;
 import java.util.Scanner;
 
-@SuppressWarnings("unused")
-
 public class root 
 {
 
@@ -175,6 +173,9 @@ static boolean resetarDatabase(Connection connection)
             "id_alvo INT DEFAULT NULL ); "
             );
 
+           
+
+
 
     //// coisas de pessoas e roles 
     /// 
@@ -183,20 +184,12 @@ static boolean resetarDatabase(Connection connection)
         stmt.execute("flush privileges;");
         stmt.execute("CREATE ROLE usuario;");
         stmt.execute("GRANT INSERT on webdriver.Arquivo to usuario;");
-        //stmt.execute("GRANT INSERT, UPDATE, DELETE on webdriver.Compartilhamento to usuario;");
-        //stmt.execute("GRANT INSERT, UPDATE, DELETE on webdriver.Suporte to usuario;");
+
         stmt.execute("GRANT INSERT on webdriver.Suporte to usuario;");
         stmt.execute("GRANT INSERT on webdriver.Comentario to usuario;");
 
         stmt.execute("CREATE ROLE instituicao;");
-        stmt.execute("GRANT INSERT on webdriver.Suporte to instituicao;"); //
 
-        
-
-        //stmt.execute("DROP ROLE IF EXISTS admin;");
-        //stmt.execute("flush privileges;");
-        //stmt.execute("CREATE ROLE admin;");
-        //stmt.execute("GRANT ALL PRIVILEGES on webdriver.* to admin;");
 
         
 
@@ -340,8 +333,31 @@ static boolean resetarDatabase(Connection connection)
         "BEFORE INSERT ON Usuario FOR EACH ROW " +
         "BEGIN " +
         "DECLARE checkDuplicado INT; " +
+        "DECLARE checkDuplicado2 INT; " +
         "SET checkDuplicado = ( SELECT EXISTS ( select * from Usuario WHERE (login = new.login) ) ); " +
+        "SET checkDuplicado2 = ( SELECT EXISTS ( select * from Instituicao WHERE (nome = new.login) ) ); " +
         "if checkDuplicado = 1 then " +
+        "signal sqlstate '45000' set message_text = 'Erro : Ja existe um usuario com esse login!'; " +
+        "end if; "+
+        "if checkDuplicado2 = 1 then " +
+        "signal sqlstate '45000' set message_text = 'Erro : Ja existe uma instituicao com esse login!'; " +
+        "end if; "+
+        "END"
+    );
+
+    stmt.execute
+    (
+        "CREATE DEFINER=`root`@`localhost` TRIGGER IF NOT EXISTS Instituicao_duplicada "+
+        "BEFORE INSERT ON Instituicao FOR EACH ROW " +
+        "BEGIN " +
+        "DECLARE checkDuplicado INT; " +
+        "DECLARE checkDuplicado2 INT; " +
+        "SET checkDuplicado = ( SELECT EXISTS ( select * from Instituicao WHERE (nome = new.nome) ) ); " +
+        "SET checkDuplicado2 = ( SELECT EXISTS ( select * from Usuario WHERE (login = new.nome) ) ); " +
+        "if checkDuplicado = 1 then " +
+        "signal sqlstate '45000' set message_text = 'Erro : Ja existe uma instituicao com esse login!'; " +
+        "end if; "+
+        "if checkDuplicado2 = 1 then " +
         "signal sqlstate '45000' set message_text = 'Erro : Ja existe um usuario com esse login!'; " +
         "end if; "+
         "END"
@@ -401,32 +417,6 @@ static boolean resetarDatabase(Connection connection)
         "END"
     );
 
-
-    stmt.execute("CREATE DEFINER=`root`@`localhost` PROCEDURE IF NOT EXISTS Chavear" + 
-    "(IN input INT) " +
-    "BEGIN " +
-    "DECLARE resultado TINYINT; " +
-    "SET resultado = ( SELECT acesso FROM Atividades_recentes WHERE (id_arquivo = input) ); " +
-    "if resultado = 1 then " +
-    "UPDATE Atividades_recentes SET acesso = 0 WHERE id_arquivo = input; " +
-    "end if; " +
-    "if resultado = 0 then " +
-    "UPDATE Atividades_recentes SET acesso = 1 WHERE id_arquivo = input; " +
-    "end if; " +
-    "END"
-    );
-
-    stmt.execute("CREATE DEFINER=`root`@`localhost` PROCEDURE IF NOT EXISTS Atualizar_acessos()" + 
-    "BEGIN " +
-
-    "UPDATE Atividades_recentes " +
-    " SET acesso = 0 WHERE (acesso = 1) AND (maisQueCemDias(id_arquivo) = 1); " +
-
-    "UPDATE Atividades_recentes " +
-    " SET acesso = 1 WHERE (acesso = 0) AND (maisQueCemDias(id_arquivo) = 0); " +
-    "END"
-    );
-
     stmt.execute
     (
         "CREATE DEFINER=`root`@`localhost` TRIGGER IF NOT EXISTS log_operacoes_versionamento "+
@@ -453,6 +443,55 @@ static boolean resetarDatabase(Connection connection)
         "INSERT INTO Registro_operacoes (data, hora, id_arquivo, operacao, id_autor, id_alvo) VALUES (new.data, CURTIME(), new.id_arquivo, 4, new.id_dono, new.id_usuario_compartilhado) ; " +
         "END"
     );
+
+    stmt.execute
+    (
+        "CREATE DEFINER=`root`@`localhost` TRIGGER IF NOT EXISTS log_remocao_compartilhamento "+
+        "AFTER DELETE ON Compartilhamento FOR EACH ROW " +
+        "BEGIN " +
+        "INSERT INTO Registro_operacoes (data, hora, id_arquivo, operacao, id_autor, id_alvo) VALUES (CURDATE(), CURTIME(), old.id_arquivo, 5, old.id_dono, old.id_usuario_compartilhado) ; " +
+        "END"
+    );
+
+
+    // procedures
+
+    stmt.execute("CREATE DEFINER=`root`@`localhost` PROCEDURE IF NOT EXISTS Chavear" + 
+    "(IN input INT) " +
+    "BEGIN " +
+    "DECLARE resultado TINYINT; " +
+    "SET resultado = ( SELECT acesso FROM Atividades_recentes WHERE (id_arquivo = input) ); " +
+    "if resultado = 1 then " +
+    "UPDATE Atividades_recentes SET acesso = 0 WHERE id_arquivo = input; " +
+    "end if; " +
+    "if resultado = 0 then " +
+    "UPDATE Atividades_recentes SET acesso = 1 WHERE id_arquivo = input; " +
+    "end if; " +
+    "END"
+    );
+
+    stmt.execute("CREATE DEFINER=`root`@`localhost` PROCEDURE IF NOT EXISTS Atualizar_acessos()" + 
+    "BEGIN " +
+
+    "UPDATE Atividades_recentes " +
+    " SET acesso = 0 WHERE (acesso = 1) AND (maisQueCemDias(id_arquivo) = 1); " +
+
+    "UPDATE Atividades_recentes " +
+    " SET acesso = 1 WHERE (acesso = 0) AND (maisQueCemDias(id_arquivo) = 0); " +
+    "END"
+    );
+
+    //stmt.execute
+    //(
+    //    "CREATE DEFINER=`root`@`localhost` TRIGGER IF NOT EXISTS registrar_Criacao "+
+    //    "AFTER INSERT ON Arquivo FOR EACH ROW " +
+   //     "BEGIN " +
+   //     "INSERT INTO Atividades_recentes (id_arquivo, data, acesso) VALUES (new.id, new.data_alteracao, 1); " +
+   //     "END"
+   // );
+
+
+
 
 
     /// procedures
@@ -748,6 +787,7 @@ static void verTabelaInstituicao(Connection connection, Scanner scan)
     
 }
 
+
 static void removerUsuario(Connection connection, Scanner scan)
 {
     scan.nextLine();
@@ -774,7 +814,7 @@ static void removerUsuario(Connection connection, Scanner scan)
 
 }
 
-static void RootAlterUser(Connection connection, Scanner scan){ // inutilizada, alguns erros, falta atualizar o usuario do database
+/* static void RootAlterUser(Connection connection, Scanner scan){ // inutilizada, alguns erros, falta atualizar o usuario do database
     scan.nextLine();
     System.out.println("Digite o ID do usuario que você quer alterar :\n\n>>> ");
     String id = scan.nextLine();
@@ -816,7 +856,7 @@ static void RootAlterUser(Connection connection, Scanner scan){ // inutilizada, 
     catch(SQLException e){
         e.printStackTrace();
     }
-}
+} */
 
 static void grantAdmin(Connection connection, Scanner scan)
 {
@@ -849,7 +889,9 @@ static void grantAdmin(Connection connection, Scanner scan)
     } 
     catch (SQLException e ) { e.printStackTrace(); }
 }
-static void alterarDadosPlano(Connection connection, Scanner scan) {
+
+/*
+static void alterarDadosPlano(Connection connection, Scanner scan) { // inutilizado, nao testado
         try {
             scan.nextLine();
             System.out.print("Digite o ID do plano que deseja alterar:\n>>> ");
@@ -876,8 +918,9 @@ static void alterarDadosPlano(Connection connection, Scanner scan) {
             e.printStackTrace();
         }
 }
+*/
 
-static void alterarDadosInstituicao(Connection connection, Scanner scan) {
+/* static void alterarDadosInstituicao(Connection connection, Scanner scan) { // inutilizado, nao testado
         try {
             scan.nextLine();
             System.out.print("Digite o ID da instituicao que deseja alterar:\n>>> ");
@@ -903,7 +946,7 @@ static void alterarDadosInstituicao(Connection connection, Scanner scan) {
         } catch (SQLException e) {
             e.printStackTrace();
         }
-    }
+    } */
 
 static void atividades_recentes(Connection connection, Scanner scan)
 {
@@ -927,11 +970,14 @@ static void atividades_recentes(Connection connection, Scanner scan)
         System.out.print("Acesso : ");
         if (result.getShort("acesso") == 1 ) { System.out.print("Prioritario\n"); }
         if (result.getShort("acesso") == 0 ) { System.out.print("Nao prioritario\n"); }
-        System.out.print("Data :" + result.getDate("data").toString() );
+        System.out.print("Data : " + result.getDate("data").toString() );
     }
-    if (check == 0) { return; }
+    if (check == 0) 
+    { System.out.print("Nao existe nenhum arquivo na database!");
+      scan.nextLine(); System.out.print("\nAperte Enter para voltar. "); scan.nextLine(); return; }
+
     System.out.print("\n----------------------------\n\n");
-    System.out.print("[1] atualizar acessos automaticamente\n[2] chavear arquivo especifico \n[0] voltar \n\n >>>");
+    System.out.print("[1] atualizar acessos automaticamente (+- 100 dias)\n[2] chavear arquivo especifico \n[0] voltar \n\n >>>");
 
     try {menu = scan.nextInt(); } catch (InputMismatchException e) { scan.next(); menu = 10; } 
     
@@ -953,11 +999,66 @@ static void atividades_recentes(Connection connection, Scanner scan)
     } catch (SQLException e) { e.printStackTrace(); }
 }
 
+static void registroOperacoes(Connection connection, Scanner scan)
+{
+    try
+    {
+        int operacao;
+
+        Statement stmt = connection.createStatement();
+        ResultSet result = stmt.executeQuery("SELECT * FROM Registro_operacoes;");
+
+        if (!result.isBeforeFirst() ) 
+        {    
+            System.out.print("\n-----------------------------------------\n");
+            System.out.println("Nenhum registro de operacao!\n"); 
+        } 
+
+        
+        while (result.next())
+        {
+            System.out.print("\n-----------------------------------------\n\n");
+
+            operacao = result.getInt("operacao");
+            switch (operacao)
+            {
+                case 1 :
+                System.out.print("Usuario de ID\u001B[33m " + result.getInt("id_autor") + "\u001B[32m criou\u001B[0m arquivo de ID \u001B[35m" + result.getInt("id_arquivo") + "\u001B[0m\n");
+                break;
+
+                case 2 :
+                System.out.print("Usuario de ID\u001B[33m " + result.getInt("id_autor") + "\u001B[32m atualizou\u001B[0m arquivo de ID \u001B[35m" + result.getInt("id_arquivo") + "\u001B[0m\n");
+                break;
+
+                case 3 :
+                System.out.print("Usuario de ID\u001B[33m " + result.getInt("id_autor") + "\u001B[31m deletou\u001B[0m arquivo de ID \u001B[35m" + result.getInt("id_arquivo") + "\u001B[0m\n");
+                break;
+
+                case 4 :
+                System.out.print("Usuario de ID\u001B[33m " + result.getInt("id_autor") + "\u001B[34m compartilhou\u001B[0m arquivo de ID \u001B[35m" + result.getInt("id_arquivo") + "\u001B[0m com usuario de id \u001B[33m" + result.getInt("id_alvo") + "\u001B[0m\n" );
+                break;
+
+                case 5 :
+                System.out.print("Usuario de ID\u001B[33m " + result.getInt("id_autor") + "\u001B[31m removeu compartilhamento\u001B[0m do arquivo de ID \u001B[35m" + result.getInt("id_arquivo") + "\u001B[0m com usuario de id \u001B[33m" + result.getInt("id_alvo") + "\u001B[0m\n" );
+                break;
+            }
+
+        }
+
+        System.out.print("\n-----------------------------------------\n\n");
+        scan.nextLine();
+        System.out.print("Aperte Enter para voltar. ");
+        scan.nextLine();
+
+
+    } catch (SQLException e ) { e.printStackTrace(); }
+
+}
+
 static void criarPlano(Connection connection, Scanner scan){
     try 
     {
     try{
-        Statement stmt = connection.createStatement();
         scan.nextLine();
         System.out.print("\nDigite o nome do novo plano:\n>>>");
         String login = scan.nextLine();
@@ -1048,7 +1149,7 @@ static void removerInstituicao(Connection connection, Scanner scan)
 
 
 
-static void teste(Connection connection)
+/* static void teste(Connection connection)
 {
 
     try
@@ -1069,7 +1170,7 @@ static void teste(Connection connection)
 
     } catch ( SQLException e ) { e.printStackTrace(); }
 
-}
+}  */
 
 public static void main(String[] args) 
 {
@@ -1092,9 +1193,8 @@ public static void main(String[] args)
     }   catch (SQLException e) { resetarDatabase(connection); }
 
 
-Scanner scan = new Scanner(System.in);
-int menu;
-Integer num;
+    Scanner scan = new Scanner(System.in);
+    int menu;
     do
     {
         opcoes();
@@ -1136,7 +1236,12 @@ Integer num;
             atividades_recentes(connection, scan);
             break;
 
-        case 9: criarPlano(connection, scan);
+        case 9:
+            registroOperacoes(connection, scan);
+            break;
+            
+
+        case 10: criarPlano(connection, scan);
             break;
 
         //case 8: 
@@ -1144,7 +1249,7 @@ Integer num;
             //break;
         
 
-        case 50: 
+        case 451: 
             if (resetarDatabase(connection)) { System.out.print("\n\n DB resetada com sucesso :)))");}
             else { System.out.print("\n\n deu ruim :((("); }
             break;
@@ -1164,7 +1269,7 @@ scan.close();
 
 static void opcoes()
 {
-    System.out.print("\n\n---------------------------\nOpcoes :\n1- ver todos os usuarios\n2- criar usuario\n3- remover usuario\n\n4- ver todas instituicoes\n5- criar instituicao\n6- remover instituicao \n\n7- dar privilegios de admin para um usuario\n8- tabela de atividades recentes\n9- criar plano \n\n50- resetar database\n\n>>>");
+    System.out.print("\n\n---------------------------\nOpcoes :\n1- ver todos os usuarios\n2- criar usuario\n3- remover usuario\n\n4- ver todas instituicoes\n5- criar instituicao\n6- remover instituicao \n\n7- dar privilegios de admin para um usuario\n8- tabela de atividades recentes\n9- registro de operacoes com arquivos \n\n10 - criar plano \n\n451- resetar database\n\n>>>");
 }
 
 }
